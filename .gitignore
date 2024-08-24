@@ -3,6 +3,7 @@
 .gitconfig
 creds.md
 .ssh
+.dotnet
 
 # Object files
 *.o
@@ -26,7 +27,6 @@ creds.md
 
 # Executable files
 *.exe
-*.out
 *.app
 *.i*86
 *.x86_64
