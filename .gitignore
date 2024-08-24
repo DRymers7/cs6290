@@ -1,0 +1,94 @@
+.cache
+.vscode-server
+.gitconfig
+creds.md
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executable files
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+*.mod*
+
+# Compiled source files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Dependency files
+*.d
+*.d.*
+*.dep
+
+# CMake specific
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CMakeLists.txt.user
+
+# Auto-generated files by IDEs
+*.swp
+*~ 
+*.ncb 
+*.user
+*.suo
+*.sln
+*.sdf
+*.VC.db
+
+# Build directories
+/build/
+/bin/
+/lib/
+/lib64/
+/dist/
+/Debug/
+/Release/
+/out/
+
+# Coverage files
+*.gcda
+*.gcno
+*.gcov
+
+# Backup files
+*.bak
+*.old
+*.orig
+*.rej
+
+# IDE specific
+/.vscode/
+/.idea/
+/.project
+/.cproject
+/.settings
