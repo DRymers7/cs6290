@@ -3,6 +3,7 @@
 .gitconfig
 creds.md
 .ssh
+.dotnet/
 
 # Object files
 *.o
