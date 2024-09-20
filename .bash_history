@@ -214,3 +214,126 @@ clear
 python count_statics.py 
 clear
 python count_statics.py 
+cd sesc/
+make
+clear
+make
+cd ..
+python -m venv venv
+cd sesc/
+clear
+cd ..
+git status
+git add .
+git status
+git commit -m "working benchmark counts and accuracy"
+clear
+git status
+git add .
+git commit -m "code cleanup before we test other things"
+git status
+git add .
+git commit -m "prepping to run nt sim
+git commit -m "prepping to run nt sim"
+git push
+cd sesc/apps/
+ls
+cd scripts/
+ls
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clerw
+clear
+clerw
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+git status
+cd sesc/apps/
+cd spla
+cd Splash2/
+ls
+cd lu/
+ls
+make
+clear
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+cd sesc/
+cd apps/
+cd Splash2/
+ls
+cd lu/
+ls
+clear
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt 
+clear
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+clear
+ls
+cat branch_log.txt | grep "Ohter"
+cat branch_log.txt | grep "Other"
+cat branch_log.txt | grep Other
+clear
+grep -v
+grep --help
+clear
+cd sesc/
+cd apps/
+cd scripts/
+ls
+clear
+python count_statics.py 
+~/sesc/scripts/report.pl sesc_lu.mipseb.256.rpt
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+xlw
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 

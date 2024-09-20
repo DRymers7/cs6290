@@ -122,6 +122,7 @@ def get_count_of_correct_and_incorrect_predictions_per_branch(branch_data, unacc
             prediction_counts[branch_id]["Correct"] += 1
         else:
             prediction_counts[branch_id]["Incorrect"] += 1
+
     return prediction_counts
 
 """
@@ -192,7 +193,10 @@ Does the following:
 def process_log_file(filename):
 
     # Edit this to change unaccepted branch types
-    unaccepted_branch_types = []
+    unaccepted_branch_types = ["Return"]
+
+    # Change this to true to exclude effect of BTB
+    # exclude_btb_effect = True
 
     # Get static branch counts of executions per bucket
     branch_data_from_txt = read_log_file_and_create_dict(filename)
@@ -222,9 +226,9 @@ Notes for use:
 (2) Input unaccepted branch types in the corresponding array (unaccepted_branch_types) within process_log_file
 (3) Output will go to the console
 
-No venv is required as we do not use any external dependencies 
+No venv is required as no external dependencies are used 
 """
 if __name__ == "__main__":
     # Replace 'branch_log.txt' with the actual filename if different
-    log_file = os.path.expanduser(os.path.join('~/sesc/apps/Splash2/lu/', 'branch_log.txt'))
+    log_file = os.path.expanduser(os.path.join('~/sesc/apps/Splash2/raytrace/', 'branch_log.txt'))
     process_log_file(log_file)
