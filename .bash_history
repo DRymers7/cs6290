@@ -38,3 +38,179 @@ git add .
 git commit -m "ORA config done"
 git status
 git push
+cd sesc/
+ls
+clear
+git status
+make
+clear
+git status
+git add . && git commit -m "reverting to orig state"
+make clean
+make
+clear
+git status
+make
+clear
+make
+git status
+git add . && git commit -m "trying new implementation"
+clear
+make
+clear
+make
+mkw
+clearw
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make clean
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+git status
+git add .
+git commit -m "working on python script to count new run"
+git push
+git status
+git add . && git commit -m "getting rid of large file"
+git push
+git status
+git checkout -b "project-1-rev"
+git status
+git push
+git push --set-upstream origin project-1-rev
+pip install git-filter-repo
+sudo apt install pip
+clear
+git filter-branch --force --index-filter \'git rm --cached --ignore-unmatch sesc~/sesc/apps/Splash2/lu/branch_log.txt' \--prune-empty --tag-name-filter cat -- --all
+git filter-branch --force --index-filter
+clear
+ls
+git status
+git prune
+git rm --cached --ignore-unmatch path/to/largefile
+git rm --cached --ignore-unmatch ~/sesc/apps/Splash2/lu/branch_log.txt
+--prune-empty --tag-name-filter cat -- --all
+git --prune-empty --tag-name-filter cat -- --all
+clear
+ls
+git push
+git push --set-upstream origin project-1-rev
+ls
+ls -a
+cd ..
+ls -a
+rm -rf .git/refs/original
+git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+git push origin --force --all
+ls -a
+rm -rf .git
+git status
+git init
+git status
+git remote add origin git@github.com:DRymers7/cs6290.git
+git checkout -b "project-1-rev"
+git status
+git add .
+git commit -m "init"
+git push
+git push --set-upstream origin project-1-rev
+cd sesc/
+ls
+cd apps/
+ls
+cd Splash2/
+ls
+cd lu/
+ls
+clear
+amke
+make
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+clear
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+clear
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+ls
+clear
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+cleawr
+clear
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+clear
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+clear
+ls
+cd sesc/
+ls
+cd scripts/
+ls
+clear
+ls
+cd ..
+cd apps/
+ls
+cd scripts/
+ls
+clear
+ls
+python count_statics.py 
+clear
+python count_statics.py 
+python --version
+cvlear
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 

@@ -1,80 +1,221 @@
 import os
 import re
+from time import sleep
 
-def process_log_file(filename):
-    # Dictionary to store per-branch statistics
-    # Key: BranchAddr (int)
-    # Value: {'total': total_executions, 'correct': correct_predictions}
-    branch_stats = {}
+"""
+Read the log file from c++ branch counts and create a python dictionary to 
+process the log file for what we need.
 
-    # Open the log file and read line by line
-    with open(filename, 'r') as f:
-        # Skip header line
-        header = f.readline()
+:returns Dictionary of branch data with each key as an int, and each value as a dict of 'CorrectPrediction',
+'BranchType', and 'BranchID'
+"""
+def read_log_file_and_create_dict(fileName):
+    init_index = 0
+    txt_data_dictionary = {}
+    with open(fileName, 'r') as file:
+        print("Creating txt file dict")
 
-        # Define the regex pattern to match each log line
-        pattern = re.compile(r'BranchAddr: (\d+), Correct Prediction: (true|false), BranchType: (\w+)')
-
-        # Read each line
-        for line in f:
+        # Skip the header line
+        next(file)
+        for line in file:
             line = line.strip()
-            match = pattern.match(line)
-            if match:
-                branch_addr_str, correct_prediction_str, branch_type = match.groups()
-                branch_addr = int(branch_addr_str)
-                correct_prediction = correct_prediction_str == 'true'
+            parts = line.split(", ")
 
-                # Update branch statistics
-                if branch_addr not in branch_stats:
-                    # Initialize counts for a new static branch
-                    branch_stats[branch_addr] = {'total': 0, 'correct': 0}
+            # Extract the relevant data from the line
+            branch_id = parts[0].split(": ")[1]
+            correct_prediction = parts[1].split(": ")[1]
+            branch_type = parts[2].split(": ")[1]
 
-                branch_stats[branch_addr]['total'] += 1
-                if correct_prediction:
-                    branch_stats[branch_addr]['correct'] += 1
-            else:
-                # If the line doesn't match the pattern, you can skip or log an error
-                print("Warning: Line doesn't match pattern")
+            # Create dictionary of data from the log 
+            txt_data_dictionary[init_index] = {
+                "BranchID": branch_id,
+                "CorrectPrediction": correct_prediction,
+                "BranchType": branch_type
+            }
 
-   # Define execution frequency buckets
-    buckets = {
-        '1-10': {'branch_count': 0, 'total_predictions': 0, 'correct_predictions': 0},
-        '11-100': {'branch_count': 0, 'total_predictions': 0, 'correct_predictions': 0},
-        '101-1000': {'branch_count': 0, 'total_predictions': 0, 'correct_predictions': 0},
-        '>1000': {'branch_count': 0, 'total_predictions': 0, 'correct_predictions': 0}
-    }
+            init_index += 1
+    return txt_data_dictionary
 
-        # Assign each static branch to a bucket based on execution frequency
-    for branch_addr, stats in branch_stats.items():
-        total_executions = stats['total']
-        correct_predictions = stats['correct']
+"""
+Get all the branch IDs from the dictionary and store in array for counting
 
-        # Determine the bucket for the current branch
-        if 1 >= total_executions < 20:
-            bucket_name = '1-19'
-        elif 20 <= total_executions < 200:
-            bucket_name = '20-199'
-        elif 200 <= total_executions < 2000:
-            bucket_name = '200-1999'
-        else:  # total_executions > 1000
-            bucket_name = '2000+'
-
-        # Update bucket statistics
-        buckets[bucket_name]['branch_count'] += 1
-        buckets[bucket_name]['total_predictions'] += total_executions
-        buckets[bucket_name]['correct_predictions'] += correct_predictions
-
-    # Print the results
-    print("Bucket\t\tNumber of Static Branches\tPrediction Accuracy")
-    for bucket_name, bucket_stats in buckets.iteritems():
-        branch_count = bucket_stats['branch_count']
-        total_predictions = bucket_stats['total_predictions']
-        correct_predictions = bucket_stats['correct_predictions']
-        if total_predictions > 0:
-            accuracy = (correct_predictions / total_predictions) * 100  # Percentage
+: returns python array of all branch IDs
+"""
+def get_branch_ids_from_dictionary(log_dictionary):
+    print("Getting branch IDs from log dictionary")
+    branch_ids = []
+    for key in log_dictionary:
+        if isinstance(log_dictionary[key], dict) and 'BranchID' in log_dictionary[key]:
+            branch_ids.append(log_dictionary[key]['BranchID'])
         else:
-            accuracy = 0.0
-        print("{0}\t\t{1}\t\t\t\t{2:.2f}%".format(bucket_name, branch_count, accuracy))
+            print("Invalid entry at key: ", key, " -> ", log_dictionary[key])
+    return branch_ids
+
+"""
+Count the frequency of all unique branch IDs, and store them in a dictionary
+
+: returns dictionary of unique branch IDs and counts
+"""
+def count_branch_id_frequencies(branch_ids):
+    print("Counting branch frequencies")
+    branch_id_counts = {}
+    for unique_id in branch_ids:
+        if unique_id in branch_id_counts:
+            branch_id_counts[unique_id] += 1
+        else:
+            branch_id_counts[unique_id] = 1
+    return branch_id_counts
+
+"""
+Assigns branch counts to the following buckets to count statics
+1-19 executions
+20-199 executions
+200-1999 executions
+2000+ executions
+
+: returns a dictionary of each count bucket
+"""
+def assign_static_counts_to_buckets(branch_id_counts):
+    bucket_1_19 = 0
+    bucket_20_199 = 0
+    bucket_200_1999 = 0
+    bucket_2000_plus = 0
+
+    for branch_id, count in branch_id_counts.items():
+        if 1 <= count <= 19:
+            bucket_1_19 += 1
+        elif 20 <= count <= 199:
+            bucket_20_199 += 1
+        elif 200 <= count <= 1999:
+            bucket_200_1999 += 1
+        elif count >= 2000:
+            bucket_2000_plus += 1
+
+    return {
+        "1-19 executions": bucket_1_19,
+        "20-199 executions": bucket_20_199,
+        "200-1999 executions": bucket_200_1999,
+        "2000+ executions": bucket_2000_plus
+    }    
+
+"""
+Function that gets the count of correct/incorrect predictions per branch. 
+
+: returns a dictionary of prediction counts, with the key as the branch ID
+"""
+def get_count_of_correct_and_incorrect_predictions_per_branch(branch_data, unaccepted_branch_types):
+
+    print("Obtaining count of correct/incorrect branch predictions")
+
+    prediction_counts = {}
+
+    for index, branch_info in branch_data.items():
+        branch_id = branch_info['BranchID']
+        is_correct = branch_info["CorrectPrediction"]
+        branch_type = branch_info["BranchType"]
+
+        if branch_type in unaccepted_branch_types:
+            continue
+
+        if branch_id not in prediction_counts:
+            prediction_counts[branch_id] = {"Correct": 0, "Incorrect": 0}
+        
+        if is_correct == "true":
+            prediction_counts[branch_id]["Correct"] += 1
+        else:
+            prediction_counts[branch_id]["Incorrect"] += 1
+    return prediction_counts
+
+"""
+Assigns prediction count branches to buckets based on sum of predictions, and keeps track of correct/incorrect
+for accuracy calculation
+
+: returns dictionary of buckets with total correct/incorrect predictions
+"""
+def assign_prediction_count_branches_to_buckets(prediction_counts):
+    
+    print("Assigning bucket groupings for branch predictions")
+
+    bucket_groupings = {
+        "1-19 executions": {"branch_count": 0, "total_correct": 0, "total_incorrect": 0},
+        "20-199 executions": {"branch_count": 0, "total_correct": 0, "total_incorrect": 0},
+        "200-1999 executions": {"branch_count": 0, "total_correct": 0, "total_incorrect": 0},
+        "2000+ executions": {"branch_count": 0, "total_correct": 0, "total_incorrect": 0}
+    }   
+
+    for branch_id, counts in prediction_counts.items():
+        total_executions = counts["Correct"] + counts["Incorrect"]
+
+        if 1 <= total_executions <= 19:
+            bucket = "1-19 executions"
+        elif 20 <= total_executions <= 199:
+            bucket = "20-199 executions"
+        elif 200 <= total_executions <= 1999:
+            bucket = "200-1999 executions"
+        elif total_executions >= 2000:
+            bucket = "2000+ executions"
+
+        bucket_groupings[bucket]["branch_count"] += 1
+        bucket_groupings[bucket]["total_correct"] += counts["Correct"] 
+        bucket_groupings[bucket]["total_incorrect"] += counts["Incorrect"]
+
+    return bucket_groupings
+
+"""
+Calculates accuracy of each bucket in the bucket_groupings dictionary
+
+: returns dictionary of bucket accuracy
+"""
+def calculate_accuracy_per_bucket(bucket_groupings):
+    
+    print("Calculating bucket accuracy")
+
+    bucket_accuracies = {}
+
+    for bucket, bucket_data in bucket_groupings.items():
+        total_correct = bucket_data["total_correct"]
+        total_predictions = bucket_data["total_correct"] + bucket_data["total_incorrect"]
+
+        # float to avoid problems with integer division in python 2
+        accuracy = (float(total_correct) / total_predictions)
+        bucket_accuracies[bucket] = accuracy
+    
+    return bucket_accuracies
+
+"""
+Method to process a given log file in the format of: BranchAddr: Branch ID, Correct Prediction: true/false, BranchType: type
+
+Does the following:
+(1) Counts static branches as they pertain the the buckets outlined in section G/H
+(2) Calculates accuracy of those branches in their respective buckets
+(3) Prints the results to the console
+
+"""
+def process_log_file(filename):
+
+    # Edit this to change unaccepted branch types
+    unaccepted_branch_types = []
+
+    # Get static branch counts of executions per bucket
+    branch_data_from_txt = read_log_file_and_create_dict(filename)
+    branch_id_array = get_branch_ids_from_dictionary(branch_data_from_txt)
+    branch_frequency_map = count_branch_id_frequencies(branch_id_array)
+    static_branch_frequencies = assign_static_counts_to_buckets(branch_frequency_map)
+
+    # Calculate accuracy per bucket
+    branch_prediction_counts = get_count_of_correct_and_incorrect_predictions_per_branch(branch_data_from_txt, unaccepted_branch_types)
+    prediction_bucket_groupings = assign_prediction_count_branches_to_buckets(branch_prediction_counts)
+    bucket_accuracies = calculate_accuracy_per_bucket(prediction_bucket_groupings)
+
+    print("-" * 30)
+    print("Static branch frequencies:")
+    for key, value in static_branch_frequencies.items():
+        print("Bucket: ", key, " Count: ", value)
+    print("\n")
+    print("Bucket accuracies:")
+    for key, value in bucket_accuracies.items():
+        print("Bucket: ", key, " Accuracy: ", value)
+    print("-" * 30)
 
 if __name__ == "__main__":
     # Replace 'branch_log.txt' with the actual filename if different
