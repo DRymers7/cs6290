@@ -1,6 +1,4 @@
 import os
-import re
-from time import sleep
 
 """
 Read the log file from c++ branch counts and create a python dictionary to 
@@ -209,14 +207,23 @@ def process_log_file(filename):
 
     print("-" * 30)
     print("Static branch frequencies:")
-    for key, value in static_branch_frequencies.items():
-        print("Bucket: ", key, " Count: ", value)
+    for key, value in sorted(static_branch_frequencies.items()):
+        print("Bucket:", key, " Count:", value)
     print("\n")
     print("Bucket accuracies:")
-    for key, value in bucket_accuracies.items():
-        print("Bucket: ", key, " Accuracy: ", value)
+    for key, value in sorted(bucket_accuracies.items()):
+        print("Bucket:", key, " Accuracy:", value)
     print("-" * 30)
 
+"""
+Notes for use:
+
+(1) Replace the branch_log.txt path with the correct path for the sim
+(2) Input unaccepted branch types in the corresponding array (unaccepted_branch_types) within process_log_file
+(3) Output will go to the console
+
+No venv is required as we do not use any external dependencies 
+"""
 if __name__ == "__main__":
     # Replace 'branch_log.txt' with the actual filename if different
     log_file = os.path.expanduser(os.path.join('~/sesc/apps/Splash2/lu/', 'branch_log.txt'))
