@@ -337,3 +337,70 @@ clear
 python count_statics.py 
 clear
 python count_statics.py 
+clear
+git status
+git diff sesc/src/libcore/BPred.cpp
+clear
+git status
+git restore sesc/src/libcore/BPred.cpp
+git status
+git restore sesc/src/libcore/BPred.h
+git status
+cd sesc/
+clear
+make
+git status
+cd ..
+git status
+git add . && git commit -m "working on getting hybrid accuracy, then I am done"
+git push
+clear
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+clear
+make
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+clear
+make
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+clear
+make
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+clear
+make
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+clear
+clear
+ls
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+clear
+python count_statics.py 
+cd sesc/
+cd apps/
+ls
+cd Splash2/
+ls
+cd raytrace/
+ls
+~/sesc/sesc.opt -f NTH -c ~/sesc/confs/cmp4-noc.conf -ort.out -ert.err raytrace.mipseb -m128 Input/reduced.env

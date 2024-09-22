@@ -584,6 +584,8 @@ PredType BPHybrid::predict(const Instruction *inst, InstID oracleID, bool doUpda
 
     bool ptaken = metaOut ? localTaken : globalTaken;
 
+    lastDirectionPredictionCorrect = (ptaken == taken);
+
     if (taken != ptaken) {
         if (doUpdate)
             btb.updateOnly(inst,oracleID);

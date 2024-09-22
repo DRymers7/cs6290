@@ -22,12 +22,14 @@ def read_log_file_and_create_dict(fileName):
             # Extract the relevant data from the line
             branch_id = parts[0].split(": ")[1]
             correct_prediction = parts[1].split(": ")[1]
-            branch_type = parts[2].split(": ")[1]
+            direction_prediction_correct = parts[2].split(": ")[1]
+            branch_type = parts[3].split(": ")[1]
 
             # Create dictionary of data from the log 
             txt_data_dictionary[init_index] = {
                 "BranchID": branch_id,
                 "CorrectPrediction": correct_prediction,
+                "DirectionPredictionCorrect": direction_prediction_correct,
                 "BranchType": branch_type
             }
 
@@ -109,7 +111,6 @@ def get_count_of_correct_and_incorrect_predictions_per_branch(branch_data, unacc
 
     for index, branch_info in branch_data.items():
         branch_id = branch_info['BranchID']
-        is_correct = branch_info["CorrectPrediction"]
         branch_type = branch_info["BranchType"]
 
         if branch_type in unaccepted_branch_types:
@@ -117,11 +118,26 @@ def get_count_of_correct_and_incorrect_predictions_per_branch(branch_data, unacc
 
         if branch_id not in prediction_counts:
             prediction_counts[branch_id] = {"Correct": 0, "Incorrect": 0}
-        
-        if is_correct == "true":
+
+        # Comment this in for Hybrid predictor
+        if branch_type == "Unconditional":
             prediction_counts[branch_id]["Correct"] += 1
         else:
-            prediction_counts[branch_id]["Incorrect"] += 1
+            # For BTB Included and NT, change this value to "CorrectPrediction", for excluded "DirectionPredictionCorrect"
+            is_correct = branch_info["CorrectPrediction"]
+        
+            if is_correct == "true":
+                prediction_counts[branch_id]["Correct"] += 1
+            else:
+                prediction_counts[branch_id]["Incorrect"] += 1
+
+        # Comment this in for NT Predictor
+        # is_correct = branch_info["CorrectPrediction"]
+    
+        # if is_correct == "true":
+        #     prediction_counts[branch_id]["Correct"] += 1
+        # else:
+        #     prediction_counts[branch_id]["Incorrect"] += 1
 
     return prediction_counts
 

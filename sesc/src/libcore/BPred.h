@@ -75,6 +75,8 @@ protected:
     int32_t bpred4Cycle;
     int32_t bpred4CycleAddrShift;
 
+    bool lastDirectionPredictionCorrect;
+
     HistoryType calcInstID(const Instruction *inst) const {
         HistoryType cid = inst->currentID(); // psudo-PC works, no need addr (slower)
 
@@ -89,6 +91,8 @@ protected:
 public:
     BPred(int32_t i, int32_t fetchWidth, const char *section, const char *name);
     virtual ~BPred();
+
+    bool getLastDirectionPredictionCorrect() const { return lastDirectionPredictionCorrect; }
 
     // If oracleID is not passed, the predictor is not updaed
     virtual PredType predict(const Instruction *inst, InstID oracleID, bool doUpdate) = 0;
@@ -460,8 +464,11 @@ public:
 
         bool correctPrediction = (p == CorrectPrediction);
 
+        bool directionPredictionCorrect = pred->getLastDirectionPredictionCorrect();
+
         branchLogFile << "BranchAddr: " << branchID
             << ", Correct Prediction: " << (correctPrediction ? "true" : "false")
+            << ", Direction Prediction Correct: " << (directionPredictionCorrect ? "true" : "false")
             << ", BranchType: " << branch_type << "\n";
 
         nMiss.cinc(p != CorrectPrediction && doUpdate);
