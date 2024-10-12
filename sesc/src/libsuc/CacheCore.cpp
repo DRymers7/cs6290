@@ -37,6 +37,7 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #define k_RANDOM     "RANDOM"
 #define k_LRU        "LRU"
+#define k_NXLRU      "NXLRU"
 
 //
 // Class CacheGeneric, the combinational logic of Cache
@@ -305,14 +306,42 @@ typename CacheAssoc<State, Addr_t, Energy>::Line *CacheAssoc<State, Addr_t, Ener
     return tmp;
 }
 
+/*
+Parameter Addr_t addr: The new address that needs a line in the cache
+
+This method does not only implement the replacement policy because an actual replacement
+(e.g., replacing one valid line with another) may not be needed.
+
+:returns If the address is alredy in thecache, this method will return the line
+that contains addr. When the set where addr belongs contains non-valid lines, one of those non
+valid lines is used - a valid block may have a cache hit in the future, while a non-valid
+line cannot. So, we should only replace a valid line if the set has no non-valid lines.
+
+TLDR implementation: 
+From the set where addr belongs, return the line that contains addr if there is such a line, 
+otherwise return the invalid line that was accessed most recently if there are any invalid lines, 
+otherwise return the least recently used line among the lines that are not locked
+
+TODO: NXLRU -> treat hits and invalid lines like existing LRU policy, but when there is no hit
+and no valid lines to reutrn, NXLRU should find the second-least-recently-used line among
+the non-locked lines. If only one non-locked line exists, that line should be returned,
+else if all lines are valid and locked, NXLRU shoul dact like LRU.
+*/
 template<class State, class Addr_t, bool Energy>
 typename CacheAssoc<State, Addr_t, Energy>::Line
 *CacheAssoc<State, Addr_t, Energy>::findLine2Replace(Addr_t addr, bool ignoreLocked)
 {
+    /*
+    This method uses set positioning to handle the counts for LRU lines. Based on the position in the set
+    we can determine the LRU line as the set end -1 of unlocked lines. Therefore, to implement NXLRU, 
+    we simply need to find the LRU line, and then find the next LRU from that position in the set of 
+    unlocked lines.
+    */
     Addr_t tag    = calcTag(addr);
     Line **theSet = &content[calcIndex4Tag(tag)];
 
     // Check most typical case
+    // Check for a hit on the MRU line
     if ((*theSet)->getTag() == tag) {
         GI(tag,(*theSet)->isValid());
         return *theSet;
@@ -324,6 +353,7 @@ typename CacheAssoc<State, Addr_t, Energy>::Line
 
     // Start in reverse order so that get the youngest invalid possible,
     // and the oldest isLocked possible (lineFree)
+    // Scanning for a hit, invalid, or unlocked line in the set
     {
         Line **l = setEnd -1;
         while(l >= theSet) {
@@ -356,30 +386,44 @@ typename CacheAssoc<State, Addr_t, Energy>::Line
         if (policy == RANDOM) {
             lineFree = &theSet[irand];
             irand = (irand + 1) & maskAssoc;
+        } else if (policy == NXLRU) {
+            // NXLRU policy to priotize the next recently used unlocked line, searching from the position in the
+            // set of the LRU line.
+            for (Line **l = setEnd -1; l > theSet; l--) {
+                if (!(*l)->isLocked()) {
+                    lineFree = l;
+                    break;
+                }
+            }
+            // if no unlocked line is found, fallback to the oldest line
+            if (lineFree == 0) {
+                lineFree = setEnd - 1;
+            }
+        
+        // all other conditions will be LRU
         } else {
             I(policy == LRU);
             // Get the oldest line possible
             lineFree = setEnd-1;
-        }
-    } else if(ignoreLocked) {
-        if (policy == RANDOM && (*lineFree)->isValid()) {
-            lineFree = &theSet[irand];
-            irand = (irand + 1) & maskAssoc;
-        } else {
+        } 
+    } else if(ignoreLocked) { // This is never true and the conditional/RANDOM is dead code
+        if (policy == RANDOM && (*lineFree)->isValid()) { // ignore -dead
+            lineFree = &theSet[irand]; // ignore - dead
+            irand = (irand + 1) & maskAssoc; // ignore -dead
+        } else { // ignore -dead
             //      I(policy == LRU);
             // Do nothing. lineFree is the oldest
-        }
+        } // ignore -dead
     }
 
-    I(lineFree);
+    I(lineFree); // assert case defined in nanassert.h
     GI(!ignoreLocked, !(*lineFree)->isValid() || !(*lineFree)->isLocked());
 
     if (lineFree == theSet)
-        return *lineFree; // Hit in the first possition
+        return *lineFree; // Hit in the first position
 
-    // No matter what is the policy, move lineHit to the *theSet. This
-    // increases locality
-    Line *tmp = *lineFree;
+    // No matter what is the policy, move lineHit to the *theSet. 
+    Line *tmp = *lineFree; // lineFree == selectedLine
     {
         Line **l = lineFree;
         while(l > theSet) {

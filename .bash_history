@@ -1,0 +1,64 @@
+git status
+git stash
+git status
+git switch master
+git branch
+git branch -a
+git fetch
+git status
+git push
+git status
+git switch master
+clear
+ls
+git status
+git branch
+git status
+git add .
+git status
+git commit -m "gitignore update"
+git push
+git checkout -b "project-2"
+git status
+clear
+cd sesc/
+make
+git status
+git add . && git commit -m "initial build"
+clear
+cd ~/sesc/apps/Splash2/fmm
+make
+clear
+~/sesc/sesc.opt -f Default -c ~/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 1
+clear
+~/sesc/sesc.opt -f SmallL1 -c ~/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 1
+~/sesc/scripts/report.pl sesc_fmm.mipseb.SmallL1
+~/sesc/scripts/report.pl sesc_fmm.mipseb.Default
+clear
+~/sesc/sesc.opt -f DMapL1 -c ~/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 1
+~/sesc/scripts/report.pl sesc_fmm.mipseb.DMapL1
+~/sesc/scripts/report.pl sesc_fmm.mipseb.Default
+clear
+~/sesc/sesc.opt -f SlowL1 -c ~/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 1
+~/sesc/sesc.opt -f SlowerL1 -c ~/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 1
+~/sesc/scripts/report.pl sesc_fmm.mipseb.SlowL1
+~/sesc/scripts/report.pl sesc_fmm.mipseb.SlowerL1
+~/sesc/scripts/report.pl sesc_fmm.mipseb.Default
+git status
+git add .
+git commit -m "done with part 1"
+git statuas
+git status
+cd ../..
+cd ..
+git status
+git add .
+git status
+git add .
+git status
+git commit -m "done with part one reverted state of cmp4"
+git push
+git push --set-upstream origin project-2
+cd sesc/
+ls
+make
