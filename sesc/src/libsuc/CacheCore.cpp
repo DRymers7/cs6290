@@ -357,6 +357,9 @@ typename CacheAssoc<State, Addr_t, Energy>::Line
     Line **lineFree=0; // Order of preference, invalid, locked - pointer to candidate line for replacement
     Line **setEnd = theSet + assoc; // pointer to end of set array
 
+    int counter = 0; // simple integer value for tracking count
+    Line **targetLinePointer = 0; // target line pointer for managing NXLRU
+
     /*
     Loop iterates from the end of the set (setEnd -1 - the LRU end) towards the beginning (theSet, the MRU end).
     The order is significant for LRU managmenet.
@@ -365,7 +368,7 @@ typename CacheAssoc<State, Addr_t, Energy>::Line
     // and the oldest isLocked possible (lineFree)
     {
         Line **l = setEnd -1;
-        while(l >= theSet && policy) {
+        while(l >= theSet && (policy == LRU || policy == RANDOM)) {
             // For each line, the method checks if the tag matches the target tag.
             if ((*l)->getTag() == tag) {
                 lineHit = l;
@@ -382,7 +385,32 @@ typename CacheAssoc<State, Addr_t, Energy>::Line
             GI(!(*l)->isValid(), !(*l)->isLocked());
             l--;
         }
+    
+        while (l >= theSet && policy == NXLRU) {
+            // For each line, the method checks if the tag matches the target tag.
+            if ((*l)->getTag() == tag) {
+                lineHit = l;
+                break;
+            }
+            // if the line is invalid, lineFree is set to this line. Looping LRU to MRU , last invalid closest to MRU is used.
+            if (!(*l)->isValid())
+                lineFree = l; // prefer the most recently used invalid line
+            // if no invalid line has been found yet and the line is unlocked, lineFree is set to this line
+            else if (lineFree == 0 && !(*l)->isLocked()) {
+                counter++;
+                targetLinePointer = l;
+                if (counter == 2) {
+                    lineFree = l;
+                }
+            }
+            // If line is invalid, isLocked must be false
+            GI(!(*l)->isValid(), !(*l)->isLocked());
+            l--;
+        }
+        if ((policy == NXLRU) && counter == 1 && lineFree == 0)
+            lineFree = targetLinePointer;
     }
+
     GI(lineFree, !(*lineFree)->isValid() || !(*lineFree)->isLocked());
 
     // return the line where the cache hit was found *
@@ -398,18 +426,25 @@ typename CacheAssoc<State, Addr_t, Energy>::Line
     /*
     No invalid or unlocked lines are found and ignoreLocked is true: inactive for our use case
     per project FAQ
+
+    Replacement candidates:
+    1. LRU -> line in LRU position in the set (end -1)
+    2. NXLRU -> line in NXLRU position in the set (end - 2)
     */
     if (lineFree == 0) {
         I(ignoreLocked);
         if (policy == RANDOM) {
             lineFree = &theSet[irand];
             irand = (irand + 1) & maskAssoc;
-        } else {
+        } else if (policy == LRU) {
             I(policy == LRU);
             // Get the oldest line possible
             lineFree = setEnd-1;
+        } else if (policy == NXLRU) {
+            I(policy == NXLRU);
+            lineFree = setEnd -2;
         }
-    } else if(ignoreLocked) {
+    } else if(ignoreLocked) { // Ignore this, this is dead code
         if (policy == RANDOM && (*lineFree)->isValid()) {
             lineFree = &theSet[irand];
             irand = (irand + 1) & maskAssoc;
