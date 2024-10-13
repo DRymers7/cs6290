@@ -361,54 +361,67 @@ typename CacheAssoc<State, Addr_t, Energy>::Line
     Line **targetLinePointer = 0; // target line pointer for managing NXLRU
 
     /*
-    Loop iterates from the end of the set (setEnd -1 - the LRU end) towards the beginning (theSet, the MRU end).
-    The order is significant for LRU managmenet.
+    Refactored to use a switch statement that changes based on the active policy. This way, we can ensure that
+    the behavior for LRU and RANDOM does not change, and we can add NXLRU, and other policy additions going forward as needed.
+
+    This method is responsible for selecting and applying the appropriate replacement policy for choosing a cache line in a 
+    cache set. It currently supports three policies (since policy is enumerated, there is no inherent need for a default case):
+
+    Case: LRU/RANDOM - existing logic/while loop
+    Case: NXLRU - NXLRU implementation
     */
-    // Start in reverse order so that get the youngest invalid possible,
-    // and the oldest isLocked possible (lineFree)
     {
         Line **l = setEnd -1;
-        while(l >= theSet && (policy == LRU || policy == RANDOM)) {
-            // For each line, the method checks if the tag matches the target tag.
-            if ((*l)->getTag() == tag) {
-                lineHit = l;
-                break;
-            }
-            // if the line is invalid, lineFree is set to this line. Looping LRU to MRU , last invalid closest to MRU is used.
-            if (!(*l)->isValid())
-                lineFree = l; // prefer the most recently used invalid line
-            // if no invalid line has been found yet and the line is unlocked, lineFree is set to this line
-            else if (lineFree == 0 && !(*l)->isLocked())
-                lineFree = l; // choose the least recently used unlocked line if no invalid line
-
-            // If line is invalid, isLocked must be false
-            GI(!(*l)->isValid(), !(*l)->isLocked());
-            l--;
-        }
-    
-        while (l >= theSet && policy == NXLRU) {
-            // For each line, the method checks if the tag matches the target tag.
-            if ((*l)->getTag() == tag) {
-                lineHit = l;
-                break;
-            }
-            // if the line is invalid, lineFree is set to this line. Looping LRU to MRU , last invalid closest to MRU is used.
-            if (!(*l)->isValid())
-                lineFree = l; // prefer the most recently used invalid line
-            // if no invalid line has been found yet and the line is unlocked, lineFree is set to this line
-            else if (lineFree == 0 && !(*l)->isLocked()) {
-                counter++;
-                targetLinePointer = l;
-                if (counter == 2) {
-                    lineFree = l;
+        switch (policy) {
+            case LRU:
+            case RANDOM:
+            while(l >= theSet) {
+                // For each line, the method checks if the tag matches the target tag.
+                if ((*l)->getTag() == tag) {
+                    lineHit = l;
+                    break;
                 }
+                // if the line is invalid, lineFree is set to this line. Looping LRU to MRU , last invalid closest to MRU is used.
+                if (!(*l)->isValid())
+                    lineFree = l; // prefer the most recently used invalid line
+                // if no invalid line has been found yet and the line is unlocked, lineFree is set to this line
+                else if (lineFree == 0 && !(*l)->isLocked())
+                    lineFree = l; // choose the least recently used unlocked line if no invalid line
+
+                // If line is invalid, isLocked must be false
+                GI(!(*l)->isValid(), !(*l)->isLocked());
+                l--;
             }
-            // If line is invalid, isLocked must be false
-            GI(!(*l)->isValid(), !(*l)->isLocked());
-            l--;
+            break;
+
+            case NXLRU: {
+                while (l >= theSet && policy == NXLRU) {
+                    // For each line, the method checks if the tag matches the target tag.
+                    if ((*l)->getTag() == tag) {
+                        lineHit = l;
+                        break;
+                    }
+                    // if the line is invalid, lineFree is set to this line. Looping LRU to MRU , last invalid closest to MRU is used.
+                    if (!(*l)->isValid())
+                        lineFree = l; // prefer the most recently used invalid line
+                    // if no invalid line has been found yet and the line is unlocked, lineFree is set to this line
+                    else if (lineFree == 0 && !(*l)->isLocked()) {
+                        counter++;
+                        targetLinePointer = l;
+                        if (counter == 2) {
+                            lineFree = l;
+                        }
+                    }
+                    // If line is invalid, isLocked must be false
+                    GI(!(*l)->isValid(), !(*l)->isLocked());
+                    l--;
+                }
+                if (counter == 1 && lineFree == 0) {
+                    lineFree = targetLinePointer;
+                }
+                break;
+            }
         }
-        if ((policy == NXLRU) && counter == 1 && lineFree == 0)
-            lineFree = targetLinePointer;
     }
 
     GI(lineFree, !(*lineFree)->isValid() || !(*lineFree)->isLocked());
@@ -473,7 +486,6 @@ typename CacheAssoc<State, Addr_t, Energy>::Line
     }
 
     return tmp;
-
 
 }
 
