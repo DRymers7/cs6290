@@ -62,3 +62,72 @@ git push --set-upstream origin project-2
 cd sesc/
 ls
 make
+cd sesc/
+ls
+cd scripts/
+ls
+report.pl /home/cs6290/sesc/apps/Splash2/lu/sesc_lu.mipseb.n256.rpt
+sh report.pl /home/cs6290/sesc/apps/Splash2/lu/sesc_lu.mipseb.n256.rpt
+cd sesc/
+make
+~/sesc/sesc.opt -f Baseline_LRU -c ~/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 1
+~/sesc/sesc.opt -f BaselineLRU -c ~/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 1
+cd ~/sesc/apps/Splash2/fmm
+~/sesc/sesc.opt -f BaselineLRU -c ~/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 1
+~/sesc/scripts/report.pl sesc_fmm.mipseb.BaselineLRU
+~/sesc/sesc.opt -f InitImplLRU -c ~/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 1
+~/sesc/scripts/report.pl sesc_fmm.mipseb.BaselineLRU
+~/sesc/scripts/report.pl sesc_fmm.mipseb.InitImplLRU
+cd sesc/
+make
+clear
+make
+git status
+clear
+make
+git status
+git add .
+git commit -m "initial implementation of NXLRU"
+clear
+cd sesc/
+cd apps/
+ls
+cd Splash2/
+ls
+cd lu/
+ls
+make
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_fmm.mipseb.n256.rpt
+ls
+pwd
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+make
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+make
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+git status
+clear
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+clear
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt

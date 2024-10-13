@@ -188,7 +188,7 @@ CacheGeneric<State, Addr_t, Energy> *CacheGeneric<State, Addr_t, Energy>::create
             SescConf->isPower2(section, size) &&
             SescConf->isPower2(section, bsize) &&
             SescConf->isPower2(section, assoc) &&
-            SescConf->isInList(section, repl, k_RANDOM, k_LRU)) {
+            SescConf->isInList(section, repl, k_RANDOM, k_LRU, k_NXLRU)) {
 
         cache = create(s, a, b, u, pStr, sk);
     } else {
@@ -231,7 +231,10 @@ CacheAssoc<State, Addr_t, Energy>::CacheAssoc(int32_t size, int32_t assoc, int32
         policy = RANDOM;
     else if (strcasecmp(pStr, k_LRU)    == 0)
         policy = LRU;
-    else {
+    // Defining NXLRU policy
+    else if (strcasecmp(pStr, k_NXLRU) == 0) {
+        policy = NXLRU;
+    } else {
         MSG("Invalid cache policy [%s]",pStr);
         exit(0);
     }
@@ -338,33 +341,42 @@ typename CacheAssoc<State, Addr_t, Energy>::Line
     unlocked lines.
     */
     Addr_t tag    = calcTag(addr);
-    Line **theSet = &content[calcIndex4Tag(tag)];
+    Line **theSet = &content[calcIndex4Tag(tag)]; // array (content) of cache lines where each set contains assoc number of lines 
 
+    /*
+    1. Check to see if the MRU line in the set (theSet) has a tag that matches the desired tag
+    theSet is a pointer to the array of cache lines that make up where the set where the address maps to. 
+    */
     // Check most typical case
-    // Check for a hit on the MRU line
     if ((*theSet)->getTag() == tag) {
         GI(tag,(*theSet)->isValid());
         return *theSet;
     }
 
-    Line **lineHit=0;
-    Line **lineFree=0; // Order of preference, invalid, locked
-    Line **setEnd = theSet + assoc;
+    Line **lineHit=0; // pointer to the line where cache hit occurs
+    Line **lineFree=0; // Order of preference, invalid, locked - pointer to candidate line for replacement
+    Line **setEnd = theSet + assoc; // pointer to end of set array
 
+    /*
+    Loop iterates from the end of the set (setEnd -1 - the LRU end) towards the beginning (theSet, the MRU end).
+    The order is significant for LRU managmenet.
+    */
     // Start in reverse order so that get the youngest invalid possible,
     // and the oldest isLocked possible (lineFree)
-    // Scanning for a hit, invalid, or unlocked line in the set
     {
         Line **l = setEnd -1;
-        while(l >= theSet) {
+        while(l >= theSet && policy) {
+            // For each line, the method checks if the tag matches the target tag.
             if ((*l)->getTag() == tag) {
                 lineHit = l;
                 break;
             }
+            // if the line is invalid, lineFree is set to this line. Looping LRU to MRU , last invalid closest to MRU is used.
             if (!(*l)->isValid())
-                lineFree = l;
+                lineFree = l; // prefer the most recently used invalid line
+            // if no invalid line has been found yet and the line is unlocked, lineFree is set to this line
             else if (lineFree == 0 && !(*l)->isLocked())
-                lineFree = l;
+                lineFree = l; // choose the least recently used unlocked line if no invalid line
 
             // If line is invalid, isLocked must be false
             GI(!(*l)->isValid(), !(*l)->isLocked());
@@ -373,57 +385,48 @@ typename CacheAssoc<State, Addr_t, Energy>::Line
     }
     GI(lineFree, !(*lineFree)->isValid() || !(*lineFree)->isLocked());
 
+    // return the line where the cache hit was found *
     if (lineHit)
         return *lineHit;
 
     I(lineHit==0);
 
+    // no replacement is possible because all lines are locked
     if(lineFree == 0 && !ignoreLocked)
         return 0;
 
+    /*
+    No invalid or unlocked lines are found and ignoreLocked is true: inactive for our use case
+    per project FAQ
+    */
     if (lineFree == 0) {
         I(ignoreLocked);
         if (policy == RANDOM) {
             lineFree = &theSet[irand];
             irand = (irand + 1) & maskAssoc;
-        } else if (policy == NXLRU) {
-            // NXLRU policy to priotize the next recently used unlocked line, searching from the position in the
-            // set of the LRU line.
-            for (Line **l = setEnd -1; l > theSet; l--) {
-                if (!(*l)->isLocked()) {
-                    lineFree = l;
-                    break;
-                }
-            }
-            // if no unlocked line is found, fallback to the oldest line
-            if (lineFree == 0) {
-                lineFree = setEnd - 1;
-            }
-        
-        // all other conditions will be LRU
         } else {
             I(policy == LRU);
             // Get the oldest line possible
             lineFree = setEnd-1;
-        } 
-    } else if(ignoreLocked) { // This is never true and the conditional/RANDOM is dead code
-        if (policy == RANDOM && (*lineFree)->isValid()) { // ignore -dead
-            lineFree = &theSet[irand]; // ignore - dead
-            irand = (irand + 1) & maskAssoc; // ignore -dead
-        } else { // ignore -dead
+        }
+    } else if(ignoreLocked) {
+        if (policy == RANDOM && (*lineFree)->isValid()) {
+            lineFree = &theSet[irand];
+            irand = (irand + 1) & maskAssoc;
+        } else {
             //      I(policy == LRU);
             // Do nothing. lineFree is the oldest
-        } // ignore -dead
+        }
     }
 
-    I(lineFree); // assert case defined in nanassert.h
+    I(lineFree);
     GI(!ignoreLocked, !(*lineFree)->isValid() || !(*lineFree)->isLocked());
 
     if (lineFree == theSet)
-        return *lineFree; // Hit in the first position
+        return *lineFree; // Hit in the first possition - already at MRU position
 
-    // No matter what is the policy, move lineHit to the *theSet. 
-    Line *tmp = *lineFree; // lineFree == selectedLine
+    // Move lineFree to MRU position
+    Line *tmp = *lineFree;
     {
         Line **l = lineFree;
         while(l > theSet) {
@@ -435,6 +438,8 @@ typename CacheAssoc<State, Addr_t, Energy>::Line
     }
 
     return tmp;
+
+
 }
 
 /*********************************************************
