@@ -30,6 +30,8 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "SMPSystemBus.h"
 #include "MSHR.h"
 #include "Port.h"
+#include <cstdint>
+#include <unordered_map>
 
 #ifdef SESC_ENERGY
 #include "GEnergy.h"
@@ -43,6 +45,9 @@ class SMPCache : public MemObj {
 public:
     typedef CacheGeneric<SMPCacheState, PAddr, false>            CacheType;
     typedef CacheGeneric<SMPCacheState, PAddr, false>::CacheLine Line;
+
+    // Hashmap created to keep track of tags that have been active in the cache.
+    static std::unordered_map<uint64_t, bool> tagTracker;
 
 private:
 	static const char *cohOutfile;

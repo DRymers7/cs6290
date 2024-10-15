@@ -131,3 +131,57 @@ clear
 ~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
 ~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
 ~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+git status
+git add .
+git commit -m "added comments"
+git status
+git add .
+git commit -m "working impl"
+git status
+git add . && git commit -m "cleaned up. moving to pt 3"
+git push
+cd sesc/
+make
+cd sesc/
+cd apps/
+cd Splash2/
+ls
+cd lu/
+ls
+clear
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+clear
+cd sesc/
+clear
+cd sesc/
+kls
+ks
+ls
+cd apps/
+ls
+cd Splash2/
+ls
+cd lu/
+ls
+clear
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+~/sesc/scripts/report.pl sesc_lu.mipseb.n256.rpt
+cd ..
+ls
+cd fmm
+ls
+clear
+~/sesc/scripts/report.pl sesc_fmm.mipseb.BaselineLRU
+clear
+~/sesc/sesc.opt -f L1NXLRU -c ~/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 1
+~/sesc/scripts/report.pl sesc_fmm.mipseb.L1NXLRU 
+~/sesc/sesc.opt -f L1LRU_base2 -c ~/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 1
+~/sesc/scripts/report.pl sesc_fmm.mipseb.L1LRU_base2 
+~/sesc/scripts/report.pl sesc_fmm.mipseb.L1NXLRU 

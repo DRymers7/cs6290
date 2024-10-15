@@ -32,6 +32,8 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #include <iomanip>
 
+std::unordered_map<uint64_t, bool> SMPCache::tagTracker;
+
 #if (defined DEBUG_LEAK)
 Time_t Directory::lastClock = 0;
 uint64_t Directory::totCnt = 0;
