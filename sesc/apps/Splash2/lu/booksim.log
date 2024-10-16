@@ -1934,4 +1934,4 @@ Overall maximum accepted flit rate = 0.00872866 (1 samples)
 Overall average injected packet size = 3 (1 samples)
 Overall average accepted packet size = 3 (1 samples)
 Overall average hops = 2.33969 (1 samples)
-BookSim: Total_run_time 48.6492
+BookSim: Total_run_time 51.9097

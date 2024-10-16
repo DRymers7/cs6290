@@ -211,7 +211,7 @@ size      =32
 type      ='single'
 bsize     =64
 #END Configuration used. Extracted from "/home/cs6290/sesc/confs/cmp4-noc.conf":
-OSSim:beginTime=Wed Oct 16 12:49:42 2024
+OSSim:beginTime=Wed Oct 16 14:12:06 2024
 
 OSSim:bench=/home/cs6290/sesc/sesc.opt -fn256.rpt -c /home/cs6290/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1 
 OSSim:benchName=lu.mipseb
@@ -223,7 +223,7 @@ Proc(1):clockTicks=0
 Proc(2):clockTicks=0
 Proc(3):clockTicks=0
 OSSim:reportName=Final
-OSSim:msecs=   48.65:nCPUs=4:nCycles=54240493
+OSSim:msecs=   51.91:nCPUs=4:nCycles=54240493
 OSSim:pseudoreset=0
 BEGIN GStats::report Final
 Read_U=0
@@ -397,8 +397,8 @@ P(0)_L2S_occ:v=0:n=50707
 P(0)_L2S_B0_occ:v=0:n=53005
 P(0)_L2S_MSHR_B0_occ:v=0.000290107:n=6894
 P(0)_DL1:compMiss=8447
-P(0)_DL1:capMiss=91871
-P(0)_DL1:confMiss=3432
+P(0)_DL1:capMiss=94008
+P(0)_DL1:confMiss=1295
 P(0)_DL1_occ:v=0.00776626:n=20006274
 P(0)_DL1_MSHR:nUse=19872952
 P(0)_DL1_MSHR:nUseReads=19872952
@@ -436,8 +436,8 @@ P(0)_IL1:writeRetry=0
 P(0)_IL1:invalDirty=0
 P(0)_IL1:allocDirty=0
 P(0)_IL1:compMiss=725
-P(0)_IL1:capMiss=23
-P(0)_IL1:confMiss=16
+P(0)_IL1:capMiss=1
+P(0)_IL1:confMiss=38
 P(0)_IL1_occ:v=0.000102133:n=40780071
 P(0)_IL1_MSHR:nUse=40778329
 P(0)_IL1_MSHR:nUseReads=40778329
@@ -1402,5 +1402,5 @@ BPred(3)_Hybrid:nMiss=0
 BPred(3)_BTB:nHit=0
 BPred(3)_BTB:nMiss=0
 END GStats::report Final
-OSSim:endTime=Wed Oct 16 12:50:30 2024
+OSSim:endTime=Wed Oct 16 14:12:57 2024
 

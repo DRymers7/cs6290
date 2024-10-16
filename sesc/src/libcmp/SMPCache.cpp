@@ -82,7 +82,7 @@ unsigned SMPCache::cacheID = 0;
 #endif
 
 /*
-    Miss tracker implementation
+    Miss tracker method implementations
 */
 SMPCache::MissTracker::MissTracker(const char* name, size_t cap)
     : capacity(cap)
@@ -91,37 +91,39 @@ SMPCache::MissTracker::MissTracker(const char* name, size_t cap)
     , confMiss("%s:confMiss", name)
 {}
 
-void SMPCache::MissTracker::classifyMiss(PAddr tag, bool isRead) {
-    // Check for compulsory miss
-    if (accessedTags.find(tag) == accessedTags.end()) {
-        // Compulsory miss
-        compMiss.inc();
-        accessedTags.insert(tag);
+void SMPCache::MissTracker::access(PAddr tag, bool isRead, bool isHit) {
+    // Update LRU ordering in fully associative cache
+    auto index = faCacheMap.find(tag);
+    if (index != faCacheMap.end()) {
+        // Tag is in fully associative cache
+        faCacheLRU.erase(index->second);
     } else {
-        // Check in fully associative cache
-        auto it = faCacheMap.find(tag);
-        if (it == faCacheMap.end()) {
+        // Tag is not in fully associative cache
+        if (faCacheLRU.size() >= capacity) {
+            // Remove least recently used tag
+            PAddr lruTag = faCacheLRU.back();
+            faCacheLRU.pop_back();
+            faCacheMap.erase(lruTag);
+        }
+    }
+
+    // Insert tag at the front (most recently used)
+    faCacheLRU.push_front(tag);
+    faCacheMap[tag] = faCacheLRU.begin();
+
+    // Only classify miss if it's a miss in the actual cache
+    if (!isHit) {
+        if (accessedTags.find(tag) == accessedTags.end()) {
+            // Compulsory miss
+            compMiss.inc();
+            accessedTags.insert(tag);
+        } else if (index == faCacheMap.end()) {
             // Capacity miss
             capMiss.inc();
-
-            // Add to fully associative cache
-            if (faCacheLRU.size() >= capacity) {
-                // Remove least recently used tag
-                PAddr lruTag = faCacheLRU.back();
-                faCacheLRU.pop_back();
-                faCacheMap.erase(lruTag);
-            }
         } else {
             // Conflict miss
             confMiss.inc();
-
-            // Move tag to front of LRU list
-            faCacheLRU.erase(it->second);
         }
-
-        // Insert or update tag in fully associative cache
-        faCacheLRU.push_front(tag);
-        faCacheMap[tag] = faCacheLRU.begin();
     }
 }
 
@@ -489,6 +491,7 @@ void SMPCache::read(MemRequest *mreq)
 void SMPCache::doRead(MemRequest *mreq)
 {
     PAddr addr = mreq->getPAddr();
+    PAddr tag = cache->calcTag(addr);
     Line *l = cache->readLine(addr);
 
     if(!((l && l->canBeRead()))) {
@@ -504,6 +507,7 @@ void SMPCache::doRead(MemRequest *mreq)
 #ifdef SESC_ENERGY
         rdEnergy[0]->inc();
 #endif
+        missTracker->access(tag, true, true);
         outsReq->retire(addr);
         mreq->goUp(hitDelay);
         return;
@@ -523,11 +527,8 @@ void SMPCache::doRead(MemRequest *mreq)
 
     readMiss.inc();
 
-    // Get the cache tag
-    PAddr tag = cache->calcTag(addr);
-
     // Classify the miss, with true indicating readMiss
-    missTracker->classifyMiss(tag, true);
+    missTracker->access(tag, true, false);
 
 #if (defined TRACK_MPKI)
     DInst *dinst = mreq->getDInst();
@@ -596,6 +597,7 @@ void SMPCache::doWriteAgain(MemRequest *mreq) {
 void SMPCache::doWrite(MemRequest *mreq)
 {
     PAddr addr = mreq->getPAddr();
+    PAddr tag = cache->calcTag(addr);
     Line *l = cache->writeLine(addr);
 
     if(!(l && l->canBeWritten())) {
@@ -608,6 +610,7 @@ void SMPCache::doWrite(MemRequest *mreq)
 #ifdef SESC_ENERGY
         wrEnergy[0]->inc();
 #endif
+        missTracker->access(tag, false, true);
         protocol->makeDirty(l);
         outsReq->retire(addr);
         mreq->goUp(hitDelay);
@@ -640,11 +643,8 @@ void SMPCache::doWrite(MemRequest *mreq)
 
     writeMiss.inc();
 
-    // Get cache tag
-    PAddr tag = cache->calcTag(addr);
-
     // Classify miss with missTracker, with false indicating write miss
-    missTracker->classifyMiss(tag, false);
+    missTracker->access(tag, false, false);
 
 #ifdef SESC_ENERGY
     wrEnergy[1]->inc();
