@@ -30,9 +30,8 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #include "SMPRouter.h"
 
+#include <cstddef>
 #include <iomanip>
-
-std::unordered_map<uint64_t, bool> SMPCache::tagTracker;
 
 #if (defined DEBUG_LEAK)
 Time_t Directory::lastClock = 0;
@@ -82,6 +81,54 @@ const char* SMPCache::cohOutfile = NULL;
 unsigned SMPCache::cacheID = 0;
 #endif
 
+/*
+    Miss tracker implementation
+*/
+SMPCache::MissTracker::MissTracker(const char* name, size_t cap)
+    : capacity(cap)
+    , compMiss("%s:compMiss", name)
+    , capMiss("%s:capMiss", name)
+    , confMiss("%s:confMiss", name)
+{}
+
+void SMPCache::MissTracker::classifyMiss(PAddr tag, bool isRead) {
+    // Check for compulsory miss
+    if (accessedTags.find(tag) == accessedTags.end()) {
+        // Compulsory miss
+        compMiss.inc();
+        accessedTags.insert(tag);
+    } else {
+        // Check in fully associative cache
+        auto it = faCacheMap.find(tag);
+        if (it == faCacheMap.end()) {
+            // Capacity miss
+            capMiss.inc();
+
+            // Add to fully associative cache
+            if (faCacheLRU.size() >= capacity) {
+                // Remove least recently used tag
+                PAddr lruTag = faCacheLRU.back();
+                faCacheLRU.pop_back();
+                faCacheMap.erase(lruTag);
+            }
+        } else {
+            // Conflict miss
+            confMiss.inc();
+
+            // Move tag to front of LRU list
+            faCacheLRU.erase(it->second);
+        }
+
+        // Insert or update tag in fully associative cache
+        faCacheLRU.push_front(tag);
+        faCacheMap[tag] = faCacheLRU.begin();
+    }
+}
+
+void SMPCache::MissTracker::reportStats() {
+    // The GStatsCntr objects automatically integrate with the simulation report
+}
+
 SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
     : MemObj(section, name)
     , readHit("%s:readHit", name)
@@ -97,6 +144,7 @@ SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
     , writeRetry("%s:writeRetry", name)
     , invalDirty("%s:invalDirty", name)
     , allocDirty("%s:allocDirty", name)
+    , missTracker(nullptr) // initializing missTracker with name and capacity
 {
     MemObj *lowerLevel = NULL;
     //printf("%d\n", dms->getPID());
@@ -133,6 +181,11 @@ SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
 
     cache = CacheType::create(section, "", name);
     I(cache);
+
+    // Initialize missTracker capacity based on cache size
+    size_t capacity = cache->getNumLines();
+    missTracker = new MissTracker(name, capacity);
+    I(missTracker);
 
     const char *prot = SescConf->getCharPtr(section, "protocol");
     if(!strcasecmp(prot, "MESI")) {
@@ -312,6 +365,8 @@ void SMPCache::PrintStat()
 
 SMPCache::~SMPCache()
 {
+    delete missTracker;
+    missTracker = nullptr;
     // do nothing
 }
 
@@ -468,6 +523,12 @@ void SMPCache::doRead(MemRequest *mreq)
 
     readMiss.inc();
 
+    // Get the cache tag
+    PAddr tag = cache->calcTag(addr);
+
+    // Classify the miss, with true indicating readMiss
+    missTracker->classifyMiss(tag, true);
+
 #if (defined TRACK_MPKI)
     DInst *dinst = mreq->getDInst();
     if(dinst) {
@@ -578,6 +639,12 @@ void SMPCache::doWrite(MemRequest *mreq)
     }
 
     writeMiss.inc();
+
+    // Get cache tag
+    PAddr tag = cache->calcTag(addr);
+
+    // Classify miss with missTracker, with false indicating write miss
+    missTracker->classifyMiss(tag, false);
 
 #ifdef SESC_ENERGY
     wrEnergy[1]->inc();

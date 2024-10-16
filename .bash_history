@@ -185,3 +185,16 @@ clear
 ~/sesc/sesc.opt -f L1LRU_base2 -c ~/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 1
 ~/sesc/scripts/report.pl sesc_fmm.mipseb.L1LRU_base2 
 ~/sesc/scripts/report.pl sesc_fmm.mipseb.L1NXLRU 
+cd sesc/
+clear
+git status
+make
+git status
+git restore src/libsuc/CacheCore.cpp
+make
+git status
+git restore sesc/src/libsuc/CacheCore.h
+git status
+git add .
+git commit -m "done with part 2 and moving to part 3"
+git push

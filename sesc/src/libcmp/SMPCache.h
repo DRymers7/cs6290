@@ -32,6 +32,7 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "Port.h"
 #include <cstdint>
 #include <unordered_map>
+#include <unordered_set>
 
 #ifdef SESC_ENERGY
 #include "GEnergy.h"
@@ -46,14 +47,35 @@ public:
     typedef CacheGeneric<SMPCacheState, PAddr, false>            CacheType;
     typedef CacheGeneric<SMPCacheState, PAddr, false>::CacheLine Line;
 
-    // Hashmap created to keep track of tags that have been active in the cache.
-    static std::unordered_map<uint64_t, bool> tagTracker;
-
 private:
 	static const char *cohOutfile;
 
     void processReply(MemRequest *mreq);
     //void resolveSituation(SMPMemRequest *sreq);
+
+    /*
+    Nested MissTracker class definition due to the requirements being to not introduce any new files. 
+    */
+    class MissTracker {
+    private:
+        std::unordered_set<PAddr> accessedTags; // Infinite cache for compulsory misses
+        std::unordered_map<PAddr, std::list<PAddr>::iterator> faCacheMap;
+        std::list<PAddr> faCacheLRU;
+        size_t capacity;
+
+        GStatsCntr compMiss;
+        GStatsCntr capMiss;
+        GStatsCntr confMiss;
+
+    public:
+        MissTracker(const char* name, size_t cap);
+        void classifyMiss(PAddr tag, bool isRead);
+        void reportStats();
+    };
+
+    // Add a MissTracker instance to SMPCache
+    MissTracker *missTracker;
+
 protected:
 
 
