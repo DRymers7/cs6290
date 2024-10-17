@@ -395,6 +395,12 @@ typename CacheAssoc<State, Addr_t, Energy>::Line
             break;
 
             case NXLRU: {
+                /*
+                    Refactor opportunity if time:
+                    There is really no reason to use a while loop here. A for loop syntactically makes
+                    more sense, however I just wanted to standardize the implementation and not have them
+                    matching stylistically.
+                */
                 while (l >= theSet && policy == NXLRU) {
                     // For each line, the method checks if the tag matches the target tag.
                     if ((*l)->getTag() == tag) {
