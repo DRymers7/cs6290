@@ -54,7 +54,16 @@ private:
     //void resolveSituation(SMPMemRequest *sreq);
 
     /*
-    Nested MissTracker class definition due to the requirements being to not introduce any new files. 
+    Nested MissTracker class definition due to the requirements being to not introduce any new files.
+
+    In a better implementation, this would be a standalone class that would be injected where it is needed
+    throughout the application. 
+
+    Properties:
+    accessedTags: unordered set of addresses representing tags that have been accessed at least once
+    faCacheMap: unordered map that maintains mapping from PAddr to iterators of list (faCacheLRU)
+    faCacheLRU: linked list of PAddr that represent blocks in order of recent usage
+
     */
     class MissTracker {
     private:
@@ -73,7 +82,7 @@ private:
         void reportStats();
     };
 
-    // Add a MissTracker instance to SMPCache
+    // MissTracker instance for SMPCache as a private member variable
     MissTracker *missTracker;
 
 protected:

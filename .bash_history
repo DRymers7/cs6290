@@ -198,3 +198,42 @@ git status
 git add .
 git commit -m "done with part 2 and moving to part 3"
 git push
+git status
+git add .
+git commit -m "working initial implementation"
+git status
+git add .
+git commit -m "results matching for 32kb 4w assc LRU lu 256"
+git status
+git push
+git status
+git add . && git commit -m "beginning cleanup and final tests"
+gi tpush
+git push
+cd sesc/
+ls
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+cd sesc/
+cd apps/
+ls
+cd SPlasq
+cd Splash2/q
+cd Splash2/
+ls
+cd lu/
+ls
+clear
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+clear
+~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1

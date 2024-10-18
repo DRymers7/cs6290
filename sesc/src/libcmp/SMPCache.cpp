@@ -84,6 +84,10 @@ unsigned SMPCache::cacheID = 0;
 /*
     Miss tracker method implementations
 */
+
+/*
+    Constructor for MissTracker class
+*/
 SMPCache::MissTracker::MissTracker(const char* name, size_t cap)
     : capacity(cap)
     , compMiss("%s:compMiss", name)
@@ -91,6 +95,16 @@ SMPCache::MissTracker::MissTracker(const char* name, size_t cap)
     , confMiss("%s:confMiss", name)
 {}
 
+/*
+    Simulates cache access and updates the miss classification 
+
+    Manages LRU by updating or inserting accessed tag and then evicting the least recently
+    used from memory. If the access is a miss in the actual cache, we determine what type of miss it was.
+
+    If the tag is found in faCacheMap, it is considered a hit, and the LRU order
+    is updated by moving the tag to the front of faCacheLRU. If the cache is full, 
+    the LRU tag is removed from faCache LRU and mapped in faCacheMap. 
+*/
 void SMPCache::MissTracker::access(PAddr tag, bool isRead, bool isHit) {
     // Update LRU ordering in fully associative cache
     auto index = faCacheMap.find(tag);
@@ -128,7 +142,10 @@ void SMPCache::MissTracker::access(PAddr tag, bool isRead, bool isHit) {
 }
 
 void SMPCache::MissTracker::reportStats() {
-    // The GStatsCntr objects automatically integrate with the simulation report
+    /*
+    The GStatsCntr objects automatically integrate with the simulation report so technically this method
+    is not needed
+    */
 }
 
 SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
