@@ -93,3 +93,6 @@ CMakeLists.txt.user
 /.project
 /.cproject
 /.settings
+
+.bash_history
+.dotnet/
