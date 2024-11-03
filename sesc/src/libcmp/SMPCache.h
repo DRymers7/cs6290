@@ -22,6 +22,7 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #ifndef SMPCACHE_H
 #define SMPCACHE_H
 
+#include "MissClassifier.h"
 #include "libcore/MemObj.h"
 #include "SMemorySystem.h"
 #include "SMPProtocol.h"
@@ -30,6 +31,7 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "SMPSystemBus.h"
 #include "MSHR.h"
 #include "Port.h"
+#include <memory>
 
 #ifdef SESC_ENERGY
 #include "GEnergy.h"
@@ -45,6 +47,9 @@ public:
     typedef CacheGeneric<SMPCacheState, PAddr, false>::CacheLine Line;
 
 private:
+
+    std::unique_ptr<MissClassifier> missClassifier;
+
 	static const char *cohOutfile;
 
     void processReply(MemRequest *mreq);
@@ -97,6 +102,14 @@ protected:
 
     GStatsCntr invalDirty;
     GStatsCntr allocDirty;
+
+    // Miss counters for section(s) I and J
+    GStatsCntr readCompMiss;
+    GStatsCntr readReplMiss;
+    GStatsCntr readCoheMiss;
+    GStatsCntr writeCompMiss;
+    GStatsCntr writeReplMiss;
+    GStatsCntr writeCoheMiss;
 
 #ifdef SESC_ENERGY
     static unsigned cacheID;
@@ -162,7 +175,7 @@ public:
             &SMPCache::sendWrite> doWriteAgainCB;
 
     SMPCache(SMemorySystem *gms, const char *section, const char *name);
-    ~SMPCache();
+    ~SMPCache() = default;
 
 	static void PrintStat();
 
