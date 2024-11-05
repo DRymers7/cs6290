@@ -379,9 +379,12 @@ public:
 template<class Addr_t=uint32_t>
 class StateGeneric {
 private:
-    Addr_t tag;
 
 public:
+
+    // fuck you sesc - this may not be needed
+    Addr_t tag;
+
     virtual ~StateGeneric() {
         tag = 0;
     }

@@ -95,9 +95,18 @@ SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
     , writeRetry("%s:writeRetry", name)
     , invalDirty("%s:invalDirty", name)
     , allocDirty("%s:allocDirty", name)
+    , rcompMiss("%s:rcompMiss", name)
+    , wcompMiss("%s:wcompMiss", name)
+    , rreplMiss("%s:rreplMiss", name)
+    , wreplMiss("%s:wreplMiss", name)
+    , rcoheMiss("%s:rcoheMiss", name)
+    , wcoheMiss("%s:wcoheMiss", name)
 {
     MemObj *lowerLevel = NULL;
     //printf("%d\n", dms->getPID());
+
+    cacheHelper = new CacheHelper(name);
+    listofInvalidTags=new std::set<uint>();
 
     I(dms);
     lowerLevel = dms->declareMemoryObj(section, "lowerLevel");
@@ -464,6 +473,20 @@ void SMPCache::doRead(MemRequest *mreq)
 
     GI(l, !l->isLocked());
 
+    bool missed = false;
+    if (listofInvalidTags->find(calcTag(addr))!=listofInvalidTags->end()) {
+        rcoheMiss.inc();
+        std::cout << "Coh" << std::endl;
+        missed=true;
+    } else {
+        //Check for 3Cs
+        if (cacheHelper -> checkCompMiss(calcTag(addr))) 
+            rcompMiss.inc();
+        else {
+            rreplMiss.inc();
+        }
+    }
+
     readMiss.inc();
 
 #if (defined TRACK_MPKI)
@@ -708,6 +731,7 @@ void SMPCache::realInvalidate(PAddr addr, ushort size, bool writeBack)
                     doWriteBack(addr);
             }
             l->invalidate();
+            listofInvalidTags->insert(l->prevTag);
         }
         addr += cache->getLineSize();
         size -= cache->getLineSize();
@@ -1681,8 +1705,10 @@ SMPCache::Line *SMPCache::allocateLine(PAddr addr, CallbackBase *cb,
         if(canDestroyCB)
             cb->destroy();
         l->setTag(cache->calcTag(addr));
+        listofInvalidTags->erase(l->prevTag);
         DEBUGPRINT("   [%s] allocated free line for %x at %lld \n",
                    getSymbolicName(), addr , globalClock);
+        cacheHelper -> lruStack -> updateLRUStack(calcTag(addr)); 
         return l;
     }
     DEBUGPRINT("   [%s] allocated line %x for %x at %lld \n",

@@ -53,6 +53,7 @@ protected:
     // JJO
     bool TS;
 public:
+    uint prevTag;
     SMPCacheState()
         : StateGeneric<>() {
         state = SMP_INVALID;
@@ -90,6 +91,17 @@ public:
         I(newstate != SMP_INVALID);
 
         state = newstate;
+    }
+
+    void clearTag() {
+        prevTag = tag;
+        tag = 0;
+    }
+
+    void setTag(uint a) {
+        I(a);
+        prevTag = tag;
+        tag = a;
     }
 
     // all these functions rely on the fact that

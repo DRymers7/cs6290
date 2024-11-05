@@ -39,6 +39,86 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "estl.h"
 #include <map>
 
+// TODO refactor
+class LRUStack {
+    std::vector<uint32_t> tagList;  // It serves as a fully asso cache
+    uint cacheSize;
+
+public:
+    LRUStack(uint size) {
+        cacheSize = size;
+    }
+
+    void updateLRUStack(uint32_t tagNumber) {
+        bool has = false;
+        uint32_t elementsinFA = tagList.size();
+        std::vector<uint32_t>::iterator position = tagList.begin();
+        for (; position != tagList.end();position++) {
+            if (*position == tagNumber) {
+                has = true;
+                break;
+            }
+        }
+        if (has) { // Update the position of the latest accessed block
+            tagList.erase(position);   
+            tagList.push_back(tagNumber);
+        }
+        else { // The block is not in the list
+            if (elementsinFA < cacheSize) // The list is not full
+                tagList.push_back(tagNumber);
+            else if (elementsinFA == cacheSize) { // The list is full
+                //std::cout << *(tagList.begin()) << std::endl;
+                tagList.erase(tagList.begin());
+                tagList.push_back(tagNumber);
+            }
+            else
+                std::cout << "Error:LRU Stack Overflow" << std::endl;
+        }
+    }
+
+    uint32_t access(uint32_t tagNumber) {
+        //bool has = false;
+        uint32_t elementsinFA = tagList.size();
+        std::vector<uint32_t>::iterator position = tagList.begin();
+        for (; position != tagList.end();position++) {
+            if (*position == tagNumber) {
+                //has = true;
+                //std::cout << elementsinFA << std::endl;
+                return 0;// conf
+            }
+        }
+        //std::cout << elementsinFA << std::endl;
+        return 1; //cap
+    }
+};
+
+// TODO refactor
+class CacheHelper {
+private:
+    std::set<uint32_t> accessed; // The Hash Set is to record the accessed block
+    char *cacheName;
+
+public:
+    LRUStack *lruStack;
+
+    CacheHelper(const char *name) {
+        cacheName = new char[50];
+        strcpy(cacheName, name);
+        // 32kB size
+        lruStack = new LRUStack(32*1024/64);
+        // 2KB size
+        //lruStack = new LRUStack(2*1024/64);
+    }
+    bool checkCompMiss(uint32_t tagNumber) {
+        if(accessed.find(tagNumber) == accessed.end()) { // THe block first time comes in
+            accessed.insert(tagNumber);
+            return true;
+        }
+        return false;
+    }
+};
+
+
 class SMPCache : public MemObj {
 public:
     typedef CacheGeneric<SMPCacheState, PAddr, false>            CacheType;
@@ -53,6 +133,8 @@ protected:
 
 
     CacheType *cache;
+    CacheHelper *cacheHelper;
+    std::set<uint> *listofInvalidTags;
 
     PortGeneric *cachePort;
     TimeDelta_t missDelay;
@@ -97,6 +179,14 @@ protected:
 
     GStatsCntr invalDirty;
     GStatsCntr allocDirty;
+
+    // Classification of Misses
+    GStatsCntr rcompMiss;
+    GStatsCntr wcompMiss;  
+    GStatsCntr rreplMiss;
+    GStatsCntr wreplMiss;
+    GStatsCntr rcoheMiss;
+    GStatsCntr wcoheMiss;
 
 #ifdef SESC_ENERGY
     static unsigned cacheID;
