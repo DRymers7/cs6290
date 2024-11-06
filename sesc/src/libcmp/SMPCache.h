@@ -41,6 +41,7 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "vector"
 #include "estl.h"
 #include <map>
+#include <mutex>
 
 class SMPCache : public MemObj {
 public:
@@ -82,6 +83,12 @@ private:
         GStatsCntr writeCompMiss;
         GStatsCntr writeReplMiss;
         GStatsCntr writeCoheMiss;
+
+        // Mutexes for each data struct for thread safety
+        std::mutex accessedTagsMutex;
+        std::mutex faCacheMapMutex;
+        std::mutex faCacheLRUMutex;
+        std::mutex countersMutex;
 
     public:
         MissTracker(const char* name, size_t cap);

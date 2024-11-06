@@ -32,6 +32,7 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #include <cstddef>
 #include <iomanip>
+#include <mutex>
 
 #if (defined DEBUG_LEAK)
 Time_t Directory::lastClock = 0;
@@ -113,12 +114,15 @@ SMPCache::MissTracker::MissTracker(const char* name, size_t cap)
 */
 void SMPCache::MissTracker::access(PAddr tag, bool isRead, bool isHit, bool isCoherenceMiss) {
     // Update LRU ordering in fully associative cache
+    std::lock_guard<std::mutex> lock(faCacheMapMutex);
     auto index = faCacheMap.find(tag);
     if (index != faCacheMap.end()) {
         // Tag is in fully associative cache
+        std::lock_guard<std::mutex> lruLock(faCacheLRUMutex);
         faCacheLRU.erase(index->second);
     } else {
         // Tag is not in fully associative cache
+        std::lock_guard<std::mutex> lruLock(faCacheLRUMutex);
         if (faCacheLRU.size() >= capacity) {
             // Remove least recently used tag
             PAddr lruTag = faCacheLRU.back();
