@@ -93,12 +93,12 @@ SMPCache::MissTracker::MissTracker(const char* name, size_t cap)
     , compMiss("%s:compMiss", name)
     , capMiss("%s:capMiss", name)
     , confMiss("%s:confMiss", name)
-    , readCompMiss("%s:confMiss", name)
-    , readReplMiss("%s:confMiss", name)
-    , readCoheMiss("%s:confMiss", name)
-    , writeCompMiss("%s:confMiss", name)
-    , writeReplMiss("%s:confMiss", name)
-    , writeCoheMiss("%s:confMiss", name)
+    , readCompMiss("%s:readCompMiss", name)
+    , readReplMiss("%s:readReplMiss", name)
+    , readCoheMiss("%s:readCoheMiss", name)
+    , writeCompMiss("%s:writeCompMiss", name)
+    , writeReplMiss("%s:writeReplMiss", name)
+    , writeCoheMiss("%s:writeCoheMiss", name)
 {}
 
 /*
@@ -133,22 +133,38 @@ void SMPCache::MissTracker::access(PAddr tag, bool isRead, bool isHit, bool isCo
 
     // Only classify miss if it's a miss in the actual cache
     if (!isHit) {
-
-        /*
-        Add code for determining if it is a coherence miss, and then call classification method
-        */
-        classifyMissPrj3(tag, isRead, isCoherenceMiss);
-
+        // Compulsory miss
         if (accessedTags.find(tag) == accessedTags.end()) {
-            // Compulsory miss
+            if (isRead) {
+                readCompMiss.inc();
+            } else {
+                writeCompMiss.inc();
+            }
             compMiss.inc();
             accessedTags.insert(tag);
-        } else if (index == faCacheMap.end()) {
-            // Capacity miss
-            capMiss.inc();
-        } else {
-            // Conflict miss
-            confMiss.inc();
+        }
+        // Coherence miss
+        else if (isCoherenceMiss) {
+            if (isRead) {
+                readCoheMiss.inc();
+            } else {
+                writeCoheMiss.inc();
+            }
+        }
+        // Capacity or Conflict miss (Replacement miss)
+        else {
+            if (index == faCacheMap.end()) {
+                // Capacity miss
+                capMiss.inc();
+            } else {
+                // Conflict miss
+                confMiss.inc();
+            }
+            if (isRead) {
+                readReplMiss.inc();
+            } else {
+                writeReplMiss.inc();
+            }
         }
     }
 }

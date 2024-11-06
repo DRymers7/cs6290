@@ -237,3 +237,71 @@ clear
 ~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
 clear
 ~/sesc/sesc.opt -fn256.rpt -c ~/sesc/confs/cmp4-noc.conf -olu.out -elu.err lu.mipseb -n256 -p1
+git status
+git switch master
+git branch -a
+git switch project-2
+git stash
+git status
+git add .
+git commit -m "bash_status"
+clear
+git statsu
+git status
+git push
+git switch project-2
+clear
+git status
+git checkout project3-from-project2
+clear
+git status
+git checkout -b "project3-fromprj2
+git checkout -b "project3-fromprj2"
+clear
+git status
+clear
+git status
+git diff sesc/src/libcmp/SMPCache.h
+git restore sesc/src/libcmp/SMPCache.h
+git diff sesc/src/libcmp/SMPCache.cpp
+clear
+make
+clear
+git status
+git add .
+git commit -m "initial implementation extending misstracker"
+git status
+git add .
+git commit -m "project 3 implementation v3 ready to test"
+git push
+git push --set-upstream origin project3-fromprj2
+cd sesc/
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+clear
+make
+cd sesc/
+cd apps/
+cd Splash2/
+ls
+cd lu/
+ls
+make
+~/sesc/sesc.opt -fAp4 -c ~/sesc/confs/cmp16-noc.conf -olu.out  -elu.err lu.mipseb -n512 -p4
