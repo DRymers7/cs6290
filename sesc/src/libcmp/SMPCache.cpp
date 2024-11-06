@@ -111,7 +111,7 @@ SMPCache::MissTracker::MissTracker(const char* name, size_t cap)
     is updated by moving the tag to the front of faCacheLRU. If the cache is full, 
     the LRU tag is removed from faCache LRU and mapped in faCacheMap. 
 */
-void SMPCache::MissTracker::access(PAddr tag, bool isRead, bool isHit) {
+void SMPCache::MissTracker::access(PAddr tag, bool isRead, bool isHit, bool isCoherenceMiss) {
     // Update LRU ordering in fully associative cache
     auto index = faCacheMap.find(tag);
     if (index != faCacheMap.end()) {
@@ -137,6 +137,7 @@ void SMPCache::MissTracker::access(PAddr tag, bool isRead, bool isHit) {
         /*
         Add code for determining if it is a coherence miss, and then call classification method
         */
+        classifyMissPrj3(tag, isRead, isCoherenceMiss);
 
         if (accessedTags.find(tag) == accessedTags.end()) {
             // Compulsory miss
@@ -162,6 +163,7 @@ void SMPCache::MissTracker::classifyMissPrj3(PAddr tag, bool isRead, bool isCohe
         } else {
             writeCompMiss.inc();
         }
+        accessedTags.insert(tag);
     } else if (isCoherenceMiss) {
         if (isRead) {
             readCoheMiss.inc();
@@ -547,8 +549,19 @@ void SMPCache::doRead(MemRequest *mreq)
     PAddr tag = cache->calcTag(addr);
     Line *l = cache->readLine(addr);
 
+    bool isCoherenceMiss = false;
+
     if(!((l && l->canBeRead()))) {
         DEBUGPRINT("[%s] read %x miss at %lld\n",getSymbolicName(), addr,  globalClock );
+
+
+        if (l && !l->isValid()) {
+            SMPCacheState &lineState = *l;
+            if (lineState.getPreviousCacheState().wasPreviouslyValid() &&
+            lineState.getPreviousCacheState().getLastValidTag() == tag) {
+                isCoherenceMiss = true;
+            }
+        }
     }
 
     //if(addr==0x7e9ee000 || addr==0x7e9ee02c) sdprint=true;
@@ -560,7 +573,7 @@ void SMPCache::doRead(MemRequest *mreq)
 #ifdef SESC_ENERGY
         rdEnergy[0]->inc();
 #endif
-        missTracker->access(tag, true, true);
+        missTracker->access(tag, true, true, isCoherenceMiss); 
         outsReq->retire(addr);
         mreq->goUp(hitDelay);
         return;
@@ -581,7 +594,7 @@ void SMPCache::doRead(MemRequest *mreq)
     readMiss.inc();
 
     // Classify the miss, with true indicating readMiss
-    missTracker->access(tag, true, false);
+    missTracker->access(tag, true, false, isCoherenceMiss);
 
 #if (defined TRACK_MPKI)
     DInst *dinst = mreq->getDInst();
@@ -653,9 +666,19 @@ void SMPCache::doWrite(MemRequest *mreq)
     PAddr tag = cache->calcTag(addr);
     Line *l = cache->writeLine(addr);
 
+    bool isCoherenceMiss = false;
+
     if(!(l && l->canBeWritten())) {
         DEBUGPRINT("[%s] write %x (%x) miss at %lld [state %x]\n",
                    getSymbolicName(), addr, calcTag(addr), globalClock, (l?l->getState():-1) );
+
+        if (l && !l->isValid()) {
+            SMPCacheState &lineState = *l;
+            if (lineState.getPreviousCacheState().wasPreviouslyValid() &&
+                lineState.getPreviousCacheState().getLastValidTag() == tag) {
+                isCoherenceMiss = true;
+            }
+        }
     }
 
     if (l && l->canBeWritten()) {
@@ -663,7 +686,7 @@ void SMPCache::doWrite(MemRequest *mreq)
 #ifdef SESC_ENERGY
         wrEnergy[0]->inc();
 #endif
-        missTracker->access(tag, false, true);
+        missTracker->access(tag, false, true, isCoherenceMiss);
         protocol->makeDirty(l);
         outsReq->retire(addr);
         mreq->goUp(hitDelay);
@@ -697,7 +720,7 @@ void SMPCache::doWrite(MemRequest *mreq)
     writeMiss.inc();
 
     // Classify miss with missTracker, with false indicating write miss
-    missTracker->access(tag, false, false);
+    missTracker->access(tag, false, false, isCoherenceMiss);
 
 #ifdef SESC_ENERGY
     wrEnergy[1]->inc();

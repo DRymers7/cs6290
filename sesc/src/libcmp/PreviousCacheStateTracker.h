@@ -16,8 +16,10 @@ class PreviousCacheStateTracker {
         PreviousCacheStateTracker() : lastValidTag(0), wasValid(false) {}
 
         void setLastValidTag(PAddr tag) {
-            lastValidTag = tag;
-            wasValid = true;
+            if (lastValidTag != tag) {  // Only update if the tag has changed
+                lastValidTag = tag;
+                wasValid = true;
+            }
         }
 
         PAddr getLastValidTag() const {

@@ -59,6 +59,14 @@ protected:
     PreviousCacheStateTracker previousCacheStateTracker;
 
 public:
+
+    /*
+        This edit?
+    */
+    unsigned getCacheState() const {
+        return state;
+    }
+
     SMPCacheState()
         : StateGeneric<>() {
         state = SMP_INVALID;
@@ -113,8 +121,12 @@ public:
         state = newstate;
     }
 
-    PreviousCacheStateTracker getPreviousCacheState() const {
+    const PreviousCacheStateTracker& getPreviousCacheState() const {
         return previousCacheStateTracker;
+    }
+
+    void resetPreviousCacheState() {
+        previousCacheStateTracker.reset();
     }
 
     // all these functions rely on the fact that

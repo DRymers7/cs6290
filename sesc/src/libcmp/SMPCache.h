@@ -85,7 +85,7 @@ private:
 
     public:
         MissTracker(const char* name, size_t cap);
-        void access(PAddr tag, bool isRead, bool isHit);
+        void access(PAddr tag, bool isRead, bool isHit, bool isCoherenceMiss);
         void classifyMissPrj3(PAddr tag, bool isRead, bool isCoherenceMiss);
         void reportStats();
     };
