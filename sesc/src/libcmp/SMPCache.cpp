@@ -137,6 +137,8 @@ void SMPCache::MissTracker::access(PAddr tag, bool isRead, bool isHit, bool isCo
 
     // Only classify miss if it's a miss in the actual cache
     if (!isHit) {
+        std::lock_guard<std::mutex> accessedTagsLock(accessedTagsMutex);
+
         // Compulsory miss
         if (accessedTags.find(tag) == accessedTags.end()) {
             if (isRead) {
@@ -149,6 +151,8 @@ void SMPCache::MissTracker::access(PAddr tag, bool isRead, bool isHit, bool isCo
         }
         // Coherence miss
         else if (isCoherenceMiss) {
+            std::lock_guard<std::mutex> counterLock(countersMutex);
+
             if (isRead) {
                 readCoheMiss.inc();
             } else {
@@ -157,17 +161,34 @@ void SMPCache::MissTracker::access(PAddr tag, bool isRead, bool isHit, bool isCo
         }
         // Capacity or Conflict miss (Replacement miss)
         else {
-            if (index == faCacheMap.end()) {
-                // Capacity miss
+            // if (index == faCacheMap.end()) {
+            //     // Capacity miss
+            //     capMiss.inc();
+            // } else {
+            //     // Conflict miss
+            //     confMiss.inc();
+            // }
+            // if (isRead) {
+            //     readReplMiss.inc();
+            // } else {
+            //     writeReplMiss.inc();
+            // }
+            if (faCacheLRU.size() >= capacity) {
+                // Capacity miss (cache is at capacity, causing evictions)
                 capMiss.inc();
+                if (isRead) {
+                    readReplMiss.inc();
+                } else {
+                    writeReplMiss.inc();
+                }
             } else {
-                // Conflict miss
+                // Conflict miss (tag exists but replaced due to associativity constraint)
                 confMiss.inc();
-            }
-            if (isRead) {
-                readReplMiss.inc();
-            } else {
-                writeReplMiss.inc();
+                if (isRead) {
+                    readReplMiss.inc();
+                } else {
+                    writeReplMiss.inc();
+                }
             }
         }
     }

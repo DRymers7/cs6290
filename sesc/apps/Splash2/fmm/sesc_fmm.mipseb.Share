@@ -211,9 +211,9 @@ size      =32
 type      ='single'
 bsize     =64
 #END Configuration used. Extracted from "/home/cs6290/sesc/confs/cmp4-noc.conf":
-OSSim:beginTime=Wed Nov  6 14:05:08 2024
+OSSim:beginTime=Wed Nov  6 16:44:42 2024
 
-OSSim:bench=/home/cs6290/sesc/sesc.opt -f ShareP4_2 -c /home/cs6290/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 4 
+OSSim:bench=/home/cs6290/sesc/sesc.opt -f Share -c /home/cs6290/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 4 
 OSSim:benchName=fmm.mipseb
 ProcessId(2):totalTime=3582977:waitTime=3001298:spawnTime=977893:exitTime=7562168:Switchs=43
 ProcessId(2):cpu=2:migrable=false:pinned=true:pid=2:ppid=-1:parentId=-1
@@ -229,7 +229,7 @@ Proc(1):clockTicks=3481843
 Proc(2):clockTicks=3584723
 Proc(3):clockTicks=4089197
 OSSim:reportName=Final
-OSSim:msecs=   12.09:nCPUs=4:nCycles=7723537
+OSSim:msecs=   12.00:nCPUs=4:nCycles=7723537
 OSSim:pseudoreset=0
 BEGIN GStats::report Final
 Read_U=0
@@ -406,8 +406,8 @@ P(0)_L2S_occ:v=0:n=17590
 P(0)_L2S_B0_occ:v=0:n=19497
 P(0)_L2S_MSHR_B0_occ:v=0.00295909:n=5745
 P(0)_DL1:compMiss=4172
-P(0)_DL1:capMiss=7096
-P(0)_DL1:confMiss=4931
+P(0)_DL1:capMiss=12026
+P(0)_DL1:confMiss=1
 P(0)_DL1:readCompMiss=1660
 P(0)_DL1:readReplMiss=8868
 P(0)_DL1:readCoheMiss=0
@@ -452,8 +452,8 @@ P(0)_IL1:writeRetry=0
 P(0)_IL1:invalDirty=0
 P(0)_IL1:allocDirty=0
 P(0)_IL1:compMiss=1663
-P(0)_IL1:capMiss=192
-P(0)_IL1:confMiss=697
+P(0)_IL1:capMiss=884
+P(0)_IL1:confMiss=5
 P(0)_IL1:readCompMiss=1663
 P(0)_IL1:readReplMiss=889
 P(0)_IL1:readCoheMiss=0
@@ -846,8 +846,8 @@ P(1)_L2S_occ:v=0:n=16455
 P(1)_L2S_B0_occ:v=0:n=18317
 P(1)_L2S_MSHR_B0_occ:v=0.000891266:n=5610
 P(1)_DL1:compMiss=1727
-P(1)_DL1:capMiss=1963
-P(1)_DL1:confMiss=4049
+P(1)_DL1:capMiss=5784
+P(1)_DL1:confMiss=228
 P(1)_DL1:readCompMiss=918
 P(1)_DL1:readReplMiss=3683
 P(1)_DL1:readCoheMiss=0
@@ -891,8 +891,8 @@ P(1)_IL1:writeRetry=0
 P(1)_IL1:invalDirty=0
 P(1)_IL1:allocDirty=0
 P(1)_IL1:compMiss=572
-P(1)_IL1:capMiss=1
-P(1)_IL1:confMiss=252
+P(1)_IL1:capMiss=77
+P(1)_IL1:confMiss=176
 P(1)_IL1:readCompMiss=572
 P(1)_IL1:readReplMiss=253
 P(1)_IL1:readCoheMiss=0
@@ -1247,8 +1247,8 @@ P(2)_L2S_occ:v=0:n=16384
 P(2)_L2S_B0_occ:v=0:n=18245
 P(2)_L2S_MSHR_B0_occ:v=0.00196113:n=5609
 P(2)_DL1:compMiss=1604
-P(2)_DL1:capMiss=2694
-P(2)_DL1:confMiss=3749
+P(2)_DL1:capMiss=6221
+P(2)_DL1:confMiss=222
 P(2)_DL1:readCompMiss=959
 P(2)_DL1:readReplMiss=4165
 P(2)_DL1:readCoheMiss=0
@@ -1292,8 +1292,8 @@ P(2)_IL1:writeRetry=0
 P(2)_IL1:invalDirty=0
 P(2)_IL1:allocDirty=0
 P(2)_IL1:compMiss=583
-P(2)_IL1:capMiss=3
-P(2)_IL1:confMiss=326
+P(2)_IL1:capMiss=327
+P(2)_IL1:confMiss=2
 P(2)_IL1:readCompMiss=583
 P(2)_IL1:readReplMiss=329
 P(2)_IL1:readCoheMiss=0
@@ -1655,8 +1655,8 @@ P(3)_L2S_occ:v=0:n=17955
 P(3)_L2S_B0_occ:v=0:n=19813
 P(3)_L2S_MSHR_B0_occ:v=0.00428725:n=5598
 P(3)_DL1:compMiss=2279
-P(3)_DL1:capMiss=4357
-P(3)_DL1:confMiss=3183
+P(3)_DL1:capMiss=7410
+P(3)_DL1:confMiss=130
 P(3)_DL1:readCompMiss=1214
 P(3)_DL1:readReplMiss=5722
 P(3)_DL1:readCoheMiss=0
@@ -1701,8 +1701,8 @@ P(3)_IL1:writeRetry=0
 P(3)_IL1:invalDirty=0
 P(3)_IL1:allocDirty=0
 P(3)_IL1:compMiss=583
-P(3)_IL1:capMiss=1
-P(3)_IL1:confMiss=233
+P(3)_IL1:capMiss=233
+P(3)_IL1:confMiss=1
 P(3)_IL1:readCompMiss=583
 P(3)_IL1:readReplMiss=234
 P(3)_IL1:readCoheMiss=0
@@ -1974,5 +1974,5 @@ BPred(3)_Hybrid:nMiss=11931
 BPred(3)_BTB:nHit=480509
 BPred(3)_BTB:nMiss=1860
 END GStats::report Final
-OSSim:endTime=Wed Nov  6 14:05:20 2024
+OSSim:endTime=Wed Nov  6 16:44:54 2024
 
