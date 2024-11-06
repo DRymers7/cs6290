@@ -76,9 +76,17 @@ private:
         GStatsCntr capMiss;
         GStatsCntr confMiss;
 
+        GStatsCntr readCompMiss;
+        GStatsCntr readReplMiss;
+        GStatsCntr readCoheMiss;
+        GStatsCntr writeCompMiss;
+        GStatsCntr writeReplMiss;
+        GStatsCntr writeCoheMiss;
+
     public:
         MissTracker(const char* name, size_t cap);
         void access(PAddr tag, bool isRead, bool isHit);
+        void classifyMissPrj3(PAddr tag, bool isRead, bool isCoherenceMiss);
         void reportStats();
     };
 

@@ -23,6 +23,8 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #define SMPCACHESTATE_H
 
 #include "CacheCore.h"
+#include "PreviousCacheStateTracker.h"
+
 
 // these states are the most basic ones you can have
 // all classes that inherit from this class should
@@ -52,6 +54,10 @@ protected:
     uint32_t state;
     // JJO
     bool TS;
+
+    PAddr currentTag;
+    PreviousCacheStateTracker previousCacheStateTracker;
+
 public:
     SMPCacheState()
         : StateGeneric<>() {
@@ -69,9 +75,24 @@ public:
         // cannot invalidate if line is in transient state,
         // except when this is the end of an invalidate chain
         GI(isLocked(), (state & SMP_TRANS_BIT) && (state & SMP_INV_BIT));
+
+        if (isValid()) {
+            previousCacheStateTracker.setLastValidTag(currentTag);
+            std::cout << "Invalidate called. Stored previous tag: " 
+                      << currentTag << std::endl;
+        }
+
         clearTag();
         state = SMP_INVALID;
         TS = false;
+    }
+
+    void setCurrentTag(PAddr tag) {
+        currentTag = tag;
+    }
+
+    PAddr getCurrentTag() {
+        return currentTag;
     }
 
     bool isLocked() const {
@@ -90,6 +111,10 @@ public:
         I(newstate != SMP_INVALID);
 
         state = newstate;
+    }
+
+    PreviousCacheStateTracker getPreviousCacheState() const {
+        return previousCacheStateTracker;
     }
 
     // all these functions rely on the fact that

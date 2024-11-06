@@ -86,13 +86,19 @@ unsigned SMPCache::cacheID = 0;
 */
 
 /*
-    Constructor for MissTracker class
+    Constructor for MissTracker class, including counters for project 3.
 */
 SMPCache::MissTracker::MissTracker(const char* name, size_t cap)
     : capacity(cap)
     , compMiss("%s:compMiss", name)
     , capMiss("%s:capMiss", name)
     , confMiss("%s:confMiss", name)
+    , readCompMiss("%s:confMiss", name)
+    , readReplMiss("%s:confMiss", name)
+    , readCoheMiss("%s:confMiss", name)
+    , writeCompMiss("%s:confMiss", name)
+    , writeReplMiss("%s:confMiss", name)
+    , writeCoheMiss("%s:confMiss", name)
 {}
 
 /*
@@ -127,6 +133,11 @@ void SMPCache::MissTracker::access(PAddr tag, bool isRead, bool isHit) {
 
     // Only classify miss if it's a miss in the actual cache
     if (!isHit) {
+
+        /*
+        Add code for determining if it is a coherence miss, and then call classification method
+        */
+
         if (accessedTags.find(tag) == accessedTags.end()) {
             // Compulsory miss
             compMiss.inc();
@@ -137,6 +148,31 @@ void SMPCache::MissTracker::access(PAddr tag, bool isRead, bool isHit) {
         } else {
             // Conflict miss
             confMiss.inc();
+        }
+    }
+}
+
+/*
+    Miss classification method added to MissTracker class to handle misses required by project 3
+*/
+void SMPCache::MissTracker::classifyMissPrj3(PAddr tag, bool isRead, bool isCoherenceMiss) {
+    if (accessedTags.find(tag) == accessedTags.end()) {
+        if (isRead) {
+            readCompMiss.inc();
+        } else {
+            writeCompMiss.inc();
+        }
+    } else if (isCoherenceMiss) {
+        if (isRead) {
+            readCoheMiss.inc();
+        } else {
+            writeCoheMiss.inc();
+        }
+    } else if (faCacheMap.find(tag) == faCacheMap.end()) {
+        if (isRead) {
+            readReplMiss.inc();
+        } else {
+            writeReplMiss.inc();
         }
     }
 }
@@ -1767,6 +1803,9 @@ SMPCache::Line *SMPCache::allocateLine(PAddr addr, CallbackBase *cb,
         if(canDestroyCB)
             cb->destroy();
         l->setTag(cache->calcTag(addr));
+
+        // l->getCacheState().setTag(cache->calcTag(addr));
+
         DEBUGPRINT("   [%s] allocated free line for %x at %lld \n",
                    getSymbolicName(), addr , globalClock);
         return l;
@@ -1920,6 +1959,7 @@ void SMPCache::doAllocateLine(PAddr addr, PAddr rpl_addr, CallbackBase *cb)
         if(l) {
             I(cb);
             l->setTag(calcTag(addr));
+            // l->getCacheState().setTag(calcTag(addr));
             l->changeStateTo(SMP_TRANS_RSV);
             cb->call();
         }
@@ -1939,6 +1979,7 @@ void SMPCache::doAllocateLine(PAddr addr, PAddr rpl_addr, CallbackBase *cb)
 
     I(cb);
     l->setTag(cache->calcTag(addr));
+    // l->getCacheState().setTag(cache->calcTag(addr));
     l->changeStateTo(SMP_TRANS_RSV);
     cb->call();
 }
