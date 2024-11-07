@@ -1,0 +1,213 @@
+#BEGIN Configuration used. Extracted from "/home/cs6290/sesc/confs/cmp16-noc.conf":
+technology='techParam'
+procsPerNode=16
+cpucore[0:15]='issueX'
+NoMigration=true
+pageSize  =4096
+[FileSys]
+mount     ='/bin=/mipsroot/tools/bin:/lib=/mipsroot/tools/lib:/tools=/mipsroot/tools'
+[voidDevice]
+deviceType='void'
+[NoMSHR]
+bsize     =64
+type      ='none'
+size      =128
+[Memory]
+lowerLevel='voidDevice'
+portOccp  =1
+numPorts  =1
+replPolicy='LRU'
+MSHR      ='NoMSHR'
+missDelay =10000
+hitDelay  =200
+size      =64
+assoc     =1
+bsize     =64
+deviceType='niceCache'
+[MemoryBus]
+delay     =5
+portOccp  =8
+deviceType='bus'
+lowerLevel="Memory Memory"
+numPorts  =8
+[MemoryCtrl]
+lowerLevel="MemoryBus MemoryBus"
+delay     =1
+portOccp  =1
+numPorts  =8
+deviceType='memoryController'
+[L2MSHR]
+bsize     =64
+size      =64
+type      ='single'
+[L2Slice]
+lowerLevel="Router RTR sharedBy 1"
+portOccpDir=1
+hitDelay  =12
+writePolicy='WB'
+bsize     =64
+inclusive =false
+deviceType='slicecache'
+assoc     =16
+hitDelayDir=1
+MSHR      ='L2MSHR'
+missDelay =12
+numPorts  =2
+portOccp  =1
+size      =1048576
+numPortsDir=1
+replPolicy='LRU'
+[NOC]
+lowerLevel="MemoryCtrl MemCtrl shared"
+booksim_sample=1000000
+booksim_output='booksim.log'
+deviceType='booksim'
+booksim_config='mesh44.booksim'
+[Router]
+lowerLevel="NOC NOC shared"
+delay     =1
+deviceType='router'
+numPorts  =2
+dimY      =4
+dimX      =4
+portOccp  =1
+[DMSHR]
+type      ='single'
+size      =64
+bsize     =64
+[DMemory]
+sideLowerLevel="L2Slice L2S"
+missDelay =1
+protocol  ='DMESI'
+replPolicy='LRU'
+bsize     =64
+assoc     =4
+size      =32768
+lowerLevel="Router RTR sharedBy 1"
+numPorts  =2
+hitDelay  =1
+MSHR      ='DMSHR'
+portOccp  =1
+deviceType='smpcache'
+[FXClusterIssueX]
+iStoreUnit='LDSTIssueX'
+schedDelay=1
+wakeupDelay=2
+wakeUpPortOccp=1
+wakeUpNumPorts=4
+schedPortOccp=1
+iBJLat    =1
+iBJUnit   ='ALUIssueX'
+recycleAt ='Execute'
+iMultLat  =4
+schedNumPorts=4
+iDivLat   =12
+iALULat   =1
+iDivUnit  ='ALUIssueX'
+iLoadUnit ='LDSTIssueX'
+iStoreLat =1
+iALUUnit  ='ALUIssueX'
+iMultUnit ='ALUIssueX'
+iLoadLat  =1
+winSize   =56
+[IMemory]
+MSHR      ='iMSHR'
+sideLowerLevel=''
+numPorts  =1
+bsize     =64
+missDelay =1
+hitDelay  =1
+replPolicy='LRU'
+portOccp  =1
+deviceType='icache'
+size      =32768
+assoc     =4
+protocol  ='DMESI'
+lowerLevel="Router RTR sharedBy 1"
+[BPredIssueX]
+btbAssoc  =2
+btbReplPolicy='LRU'
+btbSize   =256
+btbBsize  =1
+localBits =2
+historySize=8
+BTACDelay =0
+type      ='hybrid'
+l2size    =2048
+l2Bits    =1
+Metasize  =2048
+MetaBits  =2
+localSize =2048
+rasSize   =32
+[issueX]
+instrSource="IMemory IL1"
+bpred     ='BPredIssueX'
+fpRegs    =64
+OSType    ='dummy'
+robSize   =64
+regFileDelay=1
+interClusterLat=2
+maxStores =36
+frequency =1.000000e+09
+bb4Cycle  =1
+retireWidth=2
+inorder   =false
+enableICache=true
+itlb      ='FXITLB'
+dtlb      ='FXDTLB'
+renameDelay=1
+cluster[1:1]='FPClusterIssueX'
+cluster   ='FXClusterIssueX'
+decodeDelay=2
+intRegs   =64
+stForwardDelay=1
+maxIRequests=4
+maxLoads  =44
+dataSource="DMemory DL1"
+maxBranches=32
+instQueueSize=32
+fetchWidth=2
+issueWidth=2
+[FXITLB]
+assoc     =4
+bsize     =8
+size      =512
+replPolicy='LRU'
+deviceType='cache'
+[FPClusterIssueX]
+recycleAt ='Execute'
+wakeUpPortOccp=1
+schedDelay=1
+winSize   =16
+schedPortOccp=1
+wakeUpNumPorts=4
+wakeupDelay=2
+fpALUUnit ='FPIssueX'
+fpMultLat =8
+fpMultUnit='FPIssueX'
+fpDivLat  =20
+fpALULat  =1
+fpDivUnit ='FPIssueX'
+schedNumPorts=4
+[FXDTLB]
+assoc     =4
+size      =512
+bsize     =8
+deviceType='cache'
+replPolicy='LRU'
+[ALUIssueX]
+Num       =1
+Occ       =1
+[FPIssueX]
+Occ       =1
+Num       =2
+[LDSTIssueX]
+Num       =1
+Occ       =1
+[techParam]
+frequency =1.000000e+09
+[iMSHR]
+size      =32
+type      ='single'
+bsize     =64
+#END Configuration used. Extracted from "/home/cs6290/sesc/confs/cmp16-noc.conf":

@@ -30,6 +30,8 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "SMPSystemBus.h"
 #include "MSHR.h"
 #include "Port.h"
+#include <map>
+#include <vector>
 
 #ifdef SESC_ENERGY
 #include "GEnergy.h"
@@ -38,6 +40,60 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "vector"
 #include "estl.h"
 #include <map>
+
+//My Code
+class LRUStack {
+    std::vector<uint32_t> tagList;  // It serves as a fully asso cache
+    uint cacheSize;
+
+public:
+    LRUStack(uint size) {
+        cacheSize = size;
+    }
+
+    void updateLRUStack(uint32_t tagNumber) {
+        auto position = std::find(tagList.begin(), tagList.end(), tagNumber);
+
+        if (position != tagList.end()) {
+            // Tag is already in the list, move it to the back (most recently used)
+            tagList.erase(position);
+        } else if (tagList.size() >= cacheSize) {
+            // Cache is full, remove the least recently used tag (front of the list)
+            tagList.erase(tagList.begin());
+        }
+
+        // Add the tag to the back of the list (most recently used)
+        tagList.push_back(tagNumber);
+    }
+};
+
+
+class CacheHelper {
+private:
+    std::set<uint32_t> accessed; // The Hash Set is to record the accessed block
+    char *cacheName;
+
+public:
+    LRUStack *lruStack;
+
+    CacheHelper(const char *name) {
+        cacheName = new char[50];
+        strcpy(cacheName, name);
+        // 32kB size
+        lruStack = new LRUStack(32*1024/64);
+        // 2KB size
+        //lruStack = new LRUStack(2*1024/64);
+    }
+    bool checkCompMiss(uint32_t tagNumber) {
+        if (accessed.find(tagNumber) == accessed.end()) { // The block first time comes in
+            accessed.insert(tagNumber);
+            return true;
+        }
+        return false;
+    }
+};
+
+
 
 class SMPCache : public MemObj {
 public:
@@ -53,6 +109,8 @@ protected:
 
 
     CacheType *cache;
+    CacheHelper *cacheHelper;
+    std::set<uint> *listofInvalidTags;
 
     PortGeneric *cachePort;
     TimeDelta_t missDelay;
@@ -97,6 +155,13 @@ protected:
 
     GStatsCntr invalDirty;
     GStatsCntr allocDirty;
+    // Classification of Misses
+    GStatsCntr rcompMiss;
+    GStatsCntr wcompMiss;  
+    GStatsCntr rreplMiss;
+    GStatsCntr wreplMiss;
+    GStatsCntr rcoheMiss;
+    GStatsCntr wcoheMiss;
 
 #ifdef SESC_ENERGY
     static unsigned cacheID;

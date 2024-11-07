@@ -23,6 +23,7 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #define SMPCACHESTATE_H
 
 #include "CacheCore.h"
+#include <sys/types.h>
 
 // these states are the most basic ones you can have
 // all classes that inherit from this class should
@@ -53,6 +54,7 @@ protected:
     // JJO
     bool TS;
 public:
+    uint prevTag;
     SMPCacheState()
         : StateGeneric<>() {
         state = SMP_INVALID;
@@ -92,6 +94,17 @@ public:
         state = newstate;
     }
 
+    void setTag(uint a) {
+        prevTag = tag;
+        tag = a;
+    }
+
+    void clearTag() {
+        prevTag = tag;
+        tag = 0;
+    }
+
+    /**/
     // all these functions rely on the fact that
     // the rules described above are followed by all protocols
     bool isDirty() const {

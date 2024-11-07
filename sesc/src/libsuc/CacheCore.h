@@ -31,7 +31,7 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "Snippets.h"
 #include "GStats.h"
 
-enum    ReplacementPolicy  {LRU, RANDOM};
+enum    ReplacementPolicy  {LRU, RANDOM, NXLRU};
 
 #ifdef SESC_ENERGY
 template<class State, class Addr_t = uint32_t, bool Energy=true>
@@ -58,6 +58,8 @@ protected:
 
     GStatsEnergy *rdEnergy[2]; // 0 hit, 1 miss
     GStatsEnergy *wrEnergy[2]; // 0 hit, 1 miss
+
+    //GStatsCntr test;
 
     bool goodInterface;
 
@@ -94,6 +96,7 @@ protected:
         ,sets((s/b)/a)
         ,maskSets(sets-1)
         ,numLines(s/b)
+        //,test(":test")
     {
         // TODO : assoc and sets must be a power of 2
     }
@@ -208,6 +211,10 @@ public:
 
         return l;
     }
+    //My code
+   // CacheLine *getrealline(Addr_t addr) {
+    //    CacheLine *l = 
+   // }
 
     uint32_t  getLineSize() const   {
         return lineSize;
@@ -379,9 +386,10 @@ public:
 template<class Addr_t=uint32_t>
 class StateGeneric {
 private:
-    Addr_t tag;
+    //Addr_t tag;
 
 public:
+    Addr_t tag;  // My code, Put tag to public 
     virtual ~StateGeneric() {
         tag = 0;
     }

@@ -95,10 +95,18 @@ SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
     , writeRetry("%s:writeRetry", name)
     , invalDirty("%s:invalDirty", name)
     , allocDirty("%s:allocDirty", name)
+    , rcompMiss("%s:rcompMiss", name)
+    , wcompMiss("%s:wcompMiss", name)
+    , rreplMiss("%s:rreplMiss", name)
+    , wreplMiss("%s:wreplMiss", name)
+    , rcoheMiss("%s:rcoheMiss", name)
+    , wcoheMiss("%s:wcoheMiss", name)
+
 {
     MemObj *lowerLevel = NULL;
     //printf("%d\n", dms->getPID());
-
+    cacheHelper = new CacheHelper(name);
+    listofInvalidTags=new std::set<uint>();
     I(dms);
     lowerLevel = dms->declareMemoryObj(section, "lowerLevel");
 
@@ -434,6 +442,9 @@ void SMPCache::doRead(MemRequest *mreq)
     PAddr addr = mreq->getPAddr();
     Line *l = cache->readLine(addr);
 
+    auto tag = calcTag(addr);
+
+    //std::cout << cache->calcSet4Tag(addr) << std::endl;
     if(!((l && l->canBeRead()))) {
         DEBUGPRINT("[%s] read %x miss at %lld\n",getSymbolicName(), addr,  globalClock );
     }
@@ -441,9 +452,11 @@ void SMPCache::doRead(MemRequest *mreq)
     //if(addr==0x7e9ee000 || addr==0x7e9ee02c) sdprint=true;
     //if(globalClock>220000000) sdprint=true;
     //sdprint = true;
-
-    if (l && l->canBeRead()) {
+    
+    if (l && l->canBeRead() && l->isValid()) {
+        cacheHelper -> lruStack -> updateLRUStack(calcTag(addr));
         readHit.inc();
+
 #ifdef SESC_ENERGY
         rdEnergy[0]->inc();
 #endif
@@ -451,7 +464,9 @@ void SMPCache::doRead(MemRequest *mreq)
         mreq->goUp(hitDelay);
         return;
     }
+    
 
+    //std::cout << l->isValid() << std::endl;
     if (l && l->isLocked()) {
         readRetry.inc();
         //DEBUGPRINT("[%s] read locked %x miss at %lld\n",getSymbolicName(), addr,  globalClock );
@@ -464,7 +479,27 @@ void SMPCache::doRead(MemRequest *mreq)
 
     GI(l, !l->isLocked());
 
+    bool isCoherenceMiss = false;
+    if (l) {
+        if (!l->isValid() && l->prevTag == tag) {
+            isCoherenceMiss = true;
+        }
+    }
+
+    if (cacheHelper->checkCompMiss(tag)) {
+        rcompMiss.inc();
+    } else if (isCoherenceMiss) {
+        rcoheMiss.inc();
+    } else {
+        rreplMiss.inc();
+    }
+
+    cacheHelper -> lruStack -> updateLRUStack(calcTag(addr));
+
     readMiss.inc();
+     //if(pendInvTable.size() == 0)
+     //   capMiss.inc();
+    //std::cout << pendInvTable.size() << std::endl;
 
 #if (defined TRACK_MPKI)
     DInst *dinst = mreq->getDInst();
@@ -535,12 +570,15 @@ void SMPCache::doWrite(MemRequest *mreq)
     PAddr addr = mreq->getPAddr();
     Line *l = cache->writeLine(addr);
 
+    auto tag = calcTag(addr);
+
     if(!(l && l->canBeWritten())) {
         DEBUGPRINT("[%s] write %x (%x) miss at %lld [state %x]\n",
                    getSymbolicName(), addr, calcTag(addr), globalClock, (l?l->getState():-1) );
     }
 
     if (l && l->canBeWritten()) {
+        cacheHelper -> lruStack -> updateLRUStack(calcTag(addr));
         writeHit.inc();
 #ifdef SESC_ENERGY
         wrEnergy[0]->inc();
@@ -562,6 +600,26 @@ void SMPCache::doWrite(MemRequest *mreq)
         doWriteCB::scheduleAbs(nextTry, this, mreq);
         return;
     }
+
+    bool isCoherenceMiss = false;
+    
+    if (l) {
+        // Line exists in cache
+        if (!l->isValid() && l->prevTag == tag) {
+            // Line was invalidated and previously contained the same tag
+            isCoherenceMiss = true;
+        }
+    }
+
+    if (cacheHelper->checkCompMiss(tag)) {
+        wcompMiss.inc();
+    } else if (isCoherenceMiss) {
+        wcoheMiss.inc();
+    } else {
+        wreplMiss.inc();
+    }
+
+    cacheHelper->lruStack->updateLRUStack(calcTag(addr));
 
     GI(l, !l->isLocked());
 
@@ -708,9 +766,12 @@ void SMPCache::realInvalidate(PAddr addr, ushort size, bool writeBack)
                     doWriteBack(addr);
             }
             l->invalidate();
+
+            // My Code
+            // listofInvalidTags->insert(l->prevTag);
         }
         addr += cache->getLineSize();
-        size -= cache->getLineSize();
+        size -= cache->getLineSize(); 
     }
 }
 
@@ -1617,6 +1678,7 @@ void SMPCache::sendInvDirUpdate(PAddr rpl_addr, PAddr new_addr, CallbackBase *cb
         IJ(l->getState()==SMP_TRANS_INV);
 
         l->setTag(calcTag(new_addr));
+        //listofInvalidTags->erase(l->prevTag);  // My CODE
         l->changeStateTo(SMP_TRANS_RSV);
 
         DEBUGPRINT("   [%s] Invalidating clean line %x silently at %llu \n"
@@ -1643,6 +1705,7 @@ void SMPCache::processInvDirAck(SMPMemRequest *sreq) {
     IJ(l->getState()==SMP_TRANS_INV);
 
     l->setTag(calcTag(addr));
+    //listofInvalidTags->erase(l->prevTag); // My code
     l->changeStateTo(SMP_TRANS_RSV);
 
 #if 0
@@ -1681,8 +1744,10 @@ SMPCache::Line *SMPCache::allocateLine(PAddr addr, CallbackBase *cb,
         if(canDestroyCB)
             cb->destroy();
         l->setTag(cache->calcTag(addr));
+        listofInvalidTags->erase(l->prevTag); // My Code
         DEBUGPRINT("   [%s] allocated free line for %x at %lld \n",
                    getSymbolicName(), addr , globalClock);
+        cacheHelper -> lruStack -> updateLRUStack(calcTag(addr)); 
         return l;
     }
     DEBUGPRINT("   [%s] allocated line %x for %x at %lld \n",
@@ -1713,6 +1778,13 @@ SMPCache::Line *SMPCache::allocateLine(PAddr addr, CallbackBase *cb,
             //data = true;
         }
 
+        l->setTag(calcTag(addr)); // **Add this line**
+        
+        //l->setTag(cache->calcTag(addr));
+        // listofInvalidTags->erase(l->prevTag);
+        cacheHelper -> lruStack -> updateLRUStack(calcTag(addr));
+        //return l;
+
 #if 0
         if(canDestroyCB)
             cb->destroy();
@@ -1720,7 +1792,7 @@ SMPCache::Line *SMPCache::allocateLine(PAddr addr, CallbackBase *cb,
         l->setTag(cache->calcTag(addr));
         return l;
 #endif
-
+#if 1
         DEBUGPRINT("   [%s] INVALIDATE line %x (dirty? %d) changed from %x at %lld (for %x)\n",
                    getSymbolicName(), cache->calcAddr4Tag(l->getTag()), wb, l->getState(), globalClock, addr);
 
@@ -1744,11 +1816,14 @@ SMPCache::Line *SMPCache::allocateLine(PAddr addr, CallbackBase *cb,
                    getSymbolicName(), cache->calcAddr4Tag(l->getTag()), l->getState(), globalClock, addr);
 
         sendInvDirUpdate(rpl_addr, addr, cb, wb, tk);
+
+        
         return 0; // We need to send message back and forth
     }
 
     IJ(0);
     return 0;
+#endif
 #if 0
     I(pendInvTable.find(rpl_addr) == pendInvTable.end());
     pendInvTable[rpl_addr].outsResps = getNumCachesInUpperLevels();
@@ -1834,6 +1909,7 @@ void SMPCache::doAllocateLine(PAddr addr, PAddr rpl_addr, CallbackBase *cb)
         if(l) {
             I(cb);
             l->setTag(calcTag(addr));
+            // listofInvalidTags->erase(l->prevTag);
             l->changeStateTo(SMP_TRANS_RSV);
             cb->call();
         }
@@ -1853,6 +1929,7 @@ void SMPCache::doAllocateLine(PAddr addr, PAddr rpl_addr, CallbackBase *cb)
 
     I(cb);
     l->setTag(cache->calcTag(addr));
+    listofInvalidTags->erase(l->prevTag);
     l->changeStateTo(SMP_TRANS_RSV);
     cb->call();
 }
