@@ -44,20 +44,56 @@ class MissTracker {
 
 private:
     std::unordered_set<PAddr> accessedTags;
-    
+    std::unordered_set<PAddr> evictedTags; // To track evicted blocks for replacement misses
+
     GStatsCntr readCompMiss;
     GStatsCntr writeCompMiss;
+    GStatsCntr readReplMiss;
+    GStatsCntr writeReplMiss;
 
 public:
+
     MissTracker(const char* name)
         : readCompMiss("%s:readCompMiss", name)
         , writeCompMiss("%s:writeCompMiss", name)
+        , readReplMiss("%s:readReplMiss", name)
+        , writeReplMiss("%s:writeReplMiss", name)
     {
         // Initialize the accessed tags set to an empty state
         accessedTags.clear();
+        evictedTags.clear();
 
         // Optional: Add debug output
         DEBUGPRINT("MissTracker initialized for component: %s", name);
+    }
+
+    // Method to determine and handle replacement misses
+    bool determineReplacementMiss(PAddr tag, bool isRead) {
+        // Check if it’s a replacement miss
+        if (evictedTags.find(tag) != evictedTags.end()) {
+            // It's a replacement miss
+            if (isRead) {
+                readReplMiss.inc();
+            } else {
+                writeReplMiss.inc();
+            }
+
+            // Update accessedTags to include this block again
+            accessedTags.insert(tag);
+
+            // Remove tag from evictedTags (since it's no longer evicted)
+            evictedTags.erase(tag);
+
+            return true; // Replacement miss occurred
+        }
+
+        return false; // Not a replacement miss
+    }
+
+    // Track evictions
+    void trackEviction(PAddr tag) {
+        DEBUGPRINT("Tracking eviction for tag: %llu", tag);
+        evictedTags.insert(tag);
     }
 
         // Method to process access and determine if it's a compulsory miss

@@ -470,6 +470,11 @@ void SMPCache::doRead(MemRequest *mreq)
     PAddr tag = calcTag(addr);
     if (missTracker.determineCompulsoryMiss(tag, true)) {
         DEBUGPRINT("[%s] Compulsory miss detected for read address %x (tag %x)\n", getSymbolicName(), addr, tag);
+    } else {
+        // Check for replacement miss if not a compulsory miss
+        if (missTracker.determineReplacementMiss(tag, true)) {
+            DEBUGPRINT("[%s] Replacement miss detected for read address %x (tag %x)\n", getSymbolicName(), addr, tag);
+        }
     }
 
 #if (defined TRACK_MPKI)
@@ -588,6 +593,11 @@ void SMPCache::doWrite(MemRequest *mreq)
     if (missTracker.determineCompulsoryMiss(tag, false)) {
         // The method will increment the writeCompMiss counter if it's a compulsory miss.
         DEBUGPRINT("[%s] Compulsory miss detected for write address %x (tag %x)\n", getSymbolicName(), addr, tag);
+    } else {
+        // Check for replacement miss if not a compulsory miss
+        if (missTracker.determineReplacementMiss(tag, false)) {
+            DEBUGPRINT("[%s] Replacement miss detected for write address %x (tag %x)\n", getSymbolicName(), addr, tag);
+        }
     }
 
 #ifdef SESC_ENERGY
@@ -714,6 +724,12 @@ void SMPCache::realInvalidate(PAddr addr, ushort size, bool writeBack)
         if (l) {
             nextSlot(); // counts for occupancy to invalidate line
             IJ(l->isValid());
+
+            // Track eviction before invalidating
+            if (!l->isLocked() && l->isValid()) {
+                missTracker.trackEviction(l->getTag());
+            }
+
             //I(l->isValid());
             if (l->isDirty()) {
                 invalDirty.inc();
@@ -1697,6 +1713,12 @@ SMPCache::Line *SMPCache::allocateLine(PAddr addr, CallbackBase *cb,
         DEBUGPRINT("   [%s] allocated free line for %x at %lld \n",
                    getSymbolicName(), addr , globalClock);
         return l;
+    } else {
+        // Ensure eviction only for valid, unlocked lines
+        if (!l->isLocked() && l->isValid()) {
+            missTracker.trackEviction(calcTag(rpl_addr));
+        }
+        // l->setTag(cache->calcTag(addr));
     }
     DEBUGPRINT("   [%s] allocated line %x for %x at %lld \n",
                getSymbolicName(), rpl_addr, addr , globalClock);
@@ -1846,6 +1868,8 @@ void SMPCache::doAllocateLine(PAddr addr, PAddr rpl_addr, CallbackBase *cb)
 
         if(l) {
             I(cb);
+            // Track eviction
+            missTracker.trackEviction(l->getTag());
             l->setTag(calcTag(addr));
             l->changeStateTo(SMP_TRANS_RSV);
             cb->call();
