@@ -30,6 +30,7 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "SMPSystemBus.h"
 #include "MSHR.h"
 #include "Port.h"
+#include <unordered_set>
 
 #ifdef SESC_ENERGY
 #include "GEnergy.h"
@@ -38,6 +39,51 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "vector"
 #include "estl.h"
 #include <map>
+
+class MissTracker {
+
+private:
+    std::unordered_set<PAddr> accessedTags;
+    
+    GStatsCntr readCompMiss;
+    GStatsCntr writeCompMiss;
+
+public:
+    MissTracker(const char* name)
+        : readCompMiss("%s:readCompMiss", name)
+        , writeCompMiss("%s:writeCompMiss", name)
+    {
+        // Initialize the accessed tags set to an empty state
+        accessedTags.clear();
+
+        // Optional: Add debug output
+        DEBUGPRINT("MissTracker initialized for component: %s", name);
+    }
+
+        // Method to process access and determine if it's a compulsory miss
+    bool determineCompulsoryMiss(PAddr tag, bool isRead) {
+        // Check if the tag has been accessed before
+        if (accessedTags.find(tag) == accessedTags.end()) {
+            accessedTags.insert(tag); // Record the tag as accessed
+            if (isRead) {
+                readCompMiss.inc();
+                DEBUGPRINT("Read compulsory miss for tag: %llu", tag);
+            } else {
+                writeCompMiss.inc();
+                DEBUGPRINT("Write compulsory miss for tag: %llu", tag);
+            }
+            return true; // It is a compulsory miss
+        }
+
+        return false; // Not a compulsory miss
+    }
+
+    // Reset the tracker (optional, if required)
+    void reset() {
+        accessedTags.clear();
+        DEBUGPRINT("MissTracker reset.");
+    }
+};
 
 class SMPCache : public MemObj {
 public:
@@ -49,6 +95,7 @@ private:
 
     void processReply(MemRequest *mreq);
     //void resolveSituation(SMPMemRequest *sreq);
+
 protected:
 
 
@@ -97,6 +144,9 @@ protected:
 
     GStatsCntr invalDirty;
     GStatsCntr allocDirty;
+
+    MissTracker missTracker;
+
 
 #ifdef SESC_ENERGY
     static unsigned cacheID;

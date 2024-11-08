@@ -95,6 +95,7 @@ SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
     , writeRetry("%s:writeRetry", name)
     , invalDirty("%s:invalDirty", name)
     , allocDirty("%s:allocDirty", name)
+    , missTracker(name)
 {
     MemObj *lowerLevel = NULL;
     //printf("%d\n", dms->getPID());
@@ -466,6 +467,11 @@ void SMPCache::doRead(MemRequest *mreq)
 
     readMiss.inc();
 
+    PAddr tag = calcTag(addr);
+    if (missTracker.determineCompulsoryMiss(tag, true)) {
+        DEBUGPRINT("[%s] Compulsory miss detected for read address %x (tag %x)\n", getSymbolicName(), addr, tag);
+    }
+
 #if (defined TRACK_MPKI)
     DInst *dinst = mreq->getDInst();
     if(dinst) {
@@ -576,6 +582,13 @@ void SMPCache::doWrite(MemRequest *mreq)
     }
 
     writeMiss.inc();
+
+    // Check for compulsory miss
+    PAddr tag = calcTag(addr);  // Calculate the tag for this address
+    if (missTracker.determineCompulsoryMiss(tag, false)) {
+        // The method will increment the writeCompMiss counter if it's a compulsory miss.
+        DEBUGPRINT("[%s] Compulsory miss detected for write address %x (tag %x)\n", getSymbolicName(), addr, tag);
+    }
 
 #ifdef SESC_ENERGY
     wrEnergy[1]->inc();
