@@ -211,220 +211,7 @@ size      =32
 type      ='single'
 bsize     =64
 #END Configuration used. Extracted from "/home/cs6290/sesc/confs/cmp4-noc.conf":
-#BEGIN Configuration used. Extracted from "/home/cs6290/sesc/confs/cmp4-noc.conf":
-technology='techParam'
-procsPerNode=4
-cpucore[0:3]='issueX'
-NoMigration=true
-pageSize  =4096
-[FileSys]
-mount     ='/bin=/mipsroot/tools/bin:/lib=/mipsroot/tools/lib:/tools=/mipsroot/tools'
-[voidDevice]
-deviceType='void'
-[NoMSHR]
-bsize     =64
-type      ='none'
-size      =128
-[Memory]
-lowerLevel='voidDevice'
-portOccp  =1
-numPorts  =1
-replPolicy='LRU'
-MSHR      ='NoMSHR'
-missDelay =10000
-hitDelay  =200
-size      =64
-assoc     =1
-bsize     =64
-deviceType='niceCache'
-[MemoryBus]
-delay     =5
-portOccp  =8
-deviceType='bus'
-lowerLevel="Memory Memory"
-numPorts  =8
-[MemoryCtrl]
-lowerLevel="MemoryBus MemoryBus"
-delay     =1
-portOccp  =1
-numPorts  =8
-deviceType='memoryController'
-[L2MSHR]
-bsize     =64
-size      =64
-type      ='single'
-[L2Slice]
-lowerLevel="Router RTR sharedBy 1"
-portOccpDir=1
-hitDelay  =12
-writePolicy='WB'
-bsize     =64
-inclusive =false
-deviceType='slicecache'
-assoc     =16
-hitDelayDir=1
-MSHR      ='L2MSHR'
-missDelay =12
-numPorts  =2
-portOccp  =1
-size      =1048576
-numPortsDir=1
-replPolicy='LRU'
-[NOC]
-lowerLevel="MemoryCtrl MemCtrl shared"
-booksim_sample=1000000
-booksim_output='booksim.log'
-deviceType='booksim'
-booksim_config='mesh22.booksim'
-[Router]
-lowerLevel="NOC NOC shared"
-delay     =1
-deviceType='router'
-numPorts  =2
-dimY      =2
-dimX      =2
-portOccp  =1
-[DMSHR]
-type      ='single'
-size      =64
-bsize     =64
-[DMemory]
-sideLowerLevel="L2Slice L2S"
-missDelay =1
-protocol  ='DMESI'
-replPolicy='LRU'
-bsize     =64
-assoc     =4
-size      =32768
-lowerLevel="Router RTR sharedBy 1"
-numPorts  =2
-hitDelay  =1
-MSHR      ='DMSHR'
-portOccp  =1
-deviceType='smpcache'
-[FXClusterIssueX]
-iStoreUnit='LDSTIssueX'
-schedDelay=1
-wakeupDelay=2
-wakeUpPortOccp=1
-wakeUpNumPorts=4
-schedPortOccp=1
-iBJLat    =1
-iBJUnit   ='ALUIssueX'
-recycleAt ='Execute'
-iMultLat  =4
-schedNumPorts=4
-iDivLat   =12
-iALULat   =1
-iDivUnit  ='ALUIssueX'
-iLoadUnit ='LDSTIssueX'
-iStoreLat =1
-iALUUnit  ='ALUIssueX'
-iMultUnit ='ALUIssueX'
-iLoadLat  =1
-winSize   =56
-[IMemory]
-MSHR      ='iMSHR'
-sideLowerLevel=''
-numPorts  =1
-bsize     =64
-missDelay =1
-hitDelay  =1
-replPolicy='LRU'
-portOccp  =1
-deviceType='icache'
-size      =32768
-assoc     =4
-protocol  ='DMESI'
-lowerLevel="Router RTR sharedBy 1"
-[BPredIssueX]
-btbAssoc  =2
-btbReplPolicy='LRU'
-btbSize   =256
-btbBsize  =1
-localBits =2
-historySize=8
-BTACDelay =0
-type      ='hybrid'
-l2size    =2048
-l2Bits    =1
-Metasize  =2048
-MetaBits  =2
-localSize =2048
-rasSize   =32
-[issueX]
-instrSource="IMemory IL1"
-bpred     ='BPredIssueX'
-fpRegs    =64
-OSType    ='dummy'
-robSize   =64
-regFileDelay=1
-interClusterLat=2
-maxStores =36
-frequency =1.000000e+09
-bb4Cycle  =1
-retireWidth=2
-inorder   =false
-enableICache=true
-itlb      ='FXITLB'
-dtlb      ='FXDTLB'
-renameDelay=1
-cluster[1:1]='FPClusterIssueX'
-cluster   ='FXClusterIssueX'
-decodeDelay=2
-intRegs   =64
-stForwardDelay=1
-maxIRequests=4
-maxLoads  =44
-dataSource="DMemory DL1"
-maxBranches=32
-instQueueSize=32
-fetchWidth=2
-issueWidth=2
-[FXITLB]
-assoc     =4
-bsize     =8
-size      =512
-replPolicy='LRU'
-deviceType='cache'
-[FPClusterIssueX]
-recycleAt ='Execute'
-wakeUpPortOccp=1
-schedDelay=1
-winSize   =16
-schedPortOccp=1
-wakeUpNumPorts=4
-wakeupDelay=2
-fpALUUnit ='FPIssueX'
-fpMultLat =8
-fpMultUnit='FPIssueX'
-fpDivLat  =20
-fpALULat  =1
-fpDivUnit ='FPIssueX'
-schedNumPorts=4
-[FXDTLB]
-assoc     =4
-size      =512
-bsize     =8
-deviceType='cache'
-replPolicy='LRU'
-[ALUIssueX]
-Num       =1
-Occ       =1
-[FPIssueX]
-Occ       =1
-Num       =2
-[LDSTIssueX]
-Num       =1
-Occ       =1
-[techParam]
-frequency =1.000000e+09
-[iMSHR]
-size      =32
-type      ='single'
-bsize     =64
-#END Configuration used. Extracted from "/home/cs6290/sesc/confs/cmp4-noc.conf":
-OSSim:beginTime=Thu Nov  7 23:55:39 2024
+OSSim:beginTime=Fri Nov  8 00:01:36 2024
 
 OSSim:bench=/home/cs6290/sesc/sesc.opt -f Share -c /home/cs6290/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 4 
 OSSim:benchName=fmm.mipseb
@@ -442,7 +229,7 @@ Proc(1):clockTicks=3481843
 Proc(2):clockTicks=3584723
 Proc(3):clockTicks=4089197
 OSSim:reportName=Final
-OSSim:msecs=   10.54:nCPUs=4:nCycles=7723537
+OSSim:msecs=   10.72:nCPUs=4:nCycles=7723537
 OSSim:pseudoreset=0
 BEGIN GStats::report Final
 Read_U=0
@@ -474,8 +261,8 @@ P(0)_DL1:invalDirty=89
 P(0)_DL1:allocDirty=5343
 P(0)_DL1:readCompMiss=1660
 P(0)_DL1:writeCompMiss=2512
-P(0)_DL1:readReplMiss=7130
-P(0)_DL1:writeReplMiss=1122
+P(0)_DL1:readReplMiss=8843
+P(0)_DL1:writeReplMiss=1228
 P(0)_RTR_CTRLmsgCntHist(2)=13469
 P(0)_RTR_CTRLmsgCntHist(3)=7932
 P(0)_RTR_CTRLmsgCntHist(1)=9061
@@ -972,8 +759,8 @@ P(1)_DL1:invalDirty=76
 P(1)_DL1:allocDirty=1357
 P(1)_DL1:readCompMiss=918
 P(1)_DL1:writeCompMiss=809
-P(1)_DL1:readReplMiss=2317
-P(1)_DL1:writeReplMiss=284
+P(1)_DL1:readReplMiss=3656
+P(1)_DL1:writeReplMiss=377
 P(1)_RTR_CTRLmsgCntHist(3)=4995
 P(1)_RTR_CTRLmsgCntHist(1)=3881
 P(1)_RTR_CTRLmsgCntHist(2)=12877
@@ -1363,8 +1150,8 @@ P(2)_DL1:invalDirty=105
 P(2)_DL1:allocDirty=1089
 P(2)_DL1:readCompMiss=959
 P(2)_DL1:writeCompMiss=645
-P(2)_DL1:readReplMiss=2290
-P(2)_DL1:writeReplMiss=301
+P(2)_DL1:readReplMiss=4151
+P(2)_DL1:writeReplMiss=369
 P(2)_RTR_CTRLmsgCntHist(1)=4018
 P(2)_RTR_CTRLmsgCntHist(3)=4722
 P(2)_RTR_CTRLmsgCntHist(2)=12985
@@ -1761,8 +1548,8 @@ P(3)_DL1:invalDirty=119
 P(3)_DL1:allocDirty=2425
 P(3)_DL1:readCompMiss=1214
 P(3)_DL1:writeCompMiss=1065
-P(3)_DL1:readReplMiss=4177
-P(3)_DL1:writeReplMiss=341
+P(3)_DL1:readReplMiss=5713
+P(3)_DL1:writeReplMiss=425
 P(3)_RTR_CTRLmsgCntHist(1)=6160
 P(3)_RTR_CTRLmsgCntHist(2)=9981
 P(3)_RTR_CTRLmsgCntHist(3)=8495
@@ -2147,5 +1934,5 @@ BPred(3)_Hybrid:nMiss=11931
 BPred(3)_BTB:nHit=480509
 BPred(3)_BTB:nMiss=1860
 END GStats::report Final
-OSSim:endTime=Thu Nov  7 23:55:50 2024
+OSSim:endTime=Fri Nov  8 00:01:47 2024
 

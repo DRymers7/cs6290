@@ -725,10 +725,12 @@ void SMPCache::realInvalidate(PAddr addr, ushort size, bool writeBack)
             nextSlot(); // counts for occupancy to invalidate line
             IJ(l->isValid());
 
-            // Track eviction before invalidating
-            if (!l->isLocked() && l->isValid()) {
-                missTracker.trackEviction(l->getTag());
-            }
+            // // Track eviction before invalidating
+            // if (!l->isLocked() && l->isValid()) {
+            //     missTracker.trackEviction(l->getTag());
+            // }
+
+            missTracker.trackEviction(l->getTag());
 
             //I(l->isValid());
             if (l->isDirty()) {
@@ -1868,8 +1870,12 @@ void SMPCache::doAllocateLine(PAddr addr, PAddr rpl_addr, CallbackBase *cb)
 
         if(l) {
             I(cb);
-            // Track eviction
-            missTracker.trackEviction(l->getTag());
+        
+            // Track eviction only if the line was valid before replacement
+            if (l->isValid()) {
+                missTracker.trackEviction(l->getTag());
+            }
+
             l->setTag(calcTag(addr));
             l->changeStateTo(SMP_TRANS_RSV);
             cb->call();
