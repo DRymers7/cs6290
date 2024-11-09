@@ -80,6 +80,35 @@ const char* SMPCache::cohOutfile = NULL;
 unsigned SMPCache::cacheID = 0;
 #endif
 
+SMPMissTracker::SMPMissTracker(const char* name)
+    : readCompMiss("%s:readCompMiss", name)
+    , readReplMiss("%s:readReplMiss", name)
+    , readCoheMiss("%s:readCoheMiss", name) 
+    , writeCompMiss("%s:writeCompMiss", name)
+    , writeReplMiss("%s:writeReplMiss", name)
+    , writeCoheMiss("%s:writeCoheMiss", name)
+{
+    // Nothing else to initialize
+};
+
+void SMPMissTracker::trackBlockAccess(PAddr addr) {
+    blocksEverAccessed.insert(addr);
+};
+
+void SMPMissTracker::trackInvalidation(PAddr addr, PAddr blockTag) {
+    InvalidatedLineInfo& info = invalidatedLines[addr];
+    info.wasValid = true;
+    info.lastBlock = blockTag;
+};
+
+bool SMPMissTracker::isCoherenceMiss(PAddr addr) const {
+    auto it = invalidatedLines.find(addr);
+    if (it == invalidatedLines.end())
+        return false;
+        
+    return it->second.wasValid && (it->second.lastBlock == addr);
+};
+
 SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
     : MemObj(section, name)
     , readHit("%s:readHit", name)
@@ -96,6 +125,8 @@ SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
     , invalDirty("%s:invalDirty", name)
     , allocDirty("%s:allocDirty", name)
 {
+    missTracker = new SMPMissTracker(name);
+
     MemObj *lowerLevel = NULL;
     //printf("%d\n", dms->getPID());
 
@@ -310,6 +341,7 @@ void SMPCache::PrintStat()
 
 SMPCache::~SMPCache()
 {
+    delete missTracker;
     // do nothing
 }
 
@@ -466,6 +498,22 @@ void SMPCache::doRead(MemRequest *mreq)
 
     readMiss.inc();
 
+    PAddr tag = calcTag(addr);
+
+    if (missTracker->isCompulsoryMiss(tag)) {
+        missTracker->incReadCompMiss();
+        missTracker->trackNewTag(tag);
+    }
+
+    // Classify the miss
+    if (missTracker->isCoherenceMiss(addr)) {
+        missTracker->incReadCoheMiss();
+    } else {
+        missTracker->incReadReplMiss();
+    }
+
+    // sendMiss(mreq);
+
 #if (defined TRACK_MPKI)
     DInst *dinst = mreq->getDInst();
     if(dinst) {
@@ -576,6 +624,20 @@ void SMPCache::doWrite(MemRequest *mreq)
     }
 
     writeMiss.inc();
+
+    PAddr tag = calcTag(addr);
+
+    if (missTracker->isCompulsoryMiss(tag)) {
+        missTracker->incWriteCompMiss();
+        missTracker->trackNewTag(tag);
+    }
+
+    // Classify the miss
+    if (missTracker->isCoherenceMiss(addr)) {
+        missTracker->incWriteCoheMiss();
+    } else {
+        missTracker->incWriteReplMiss();
+    }
 
 #ifdef SESC_ENERGY
     wrEnergy[1]->inc();
@@ -702,6 +764,10 @@ void SMPCache::realInvalidate(PAddr addr, ushort size, bool writeBack)
             nextSlot(); // counts for occupancy to invalidate line
             IJ(l->isValid());
             //I(l->isValid());
+
+            // Track invalidation before it happens
+            missTracker->trackInvalidation(addr, l->getTag());
+
             if (l->isDirty()) {
                 invalDirty.inc();
                 if(writeBack)

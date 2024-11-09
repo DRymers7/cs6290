@@ -39,76 +39,57 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "estl.h"
 #include <map>
 
-class CacheMissTracker {
+// Add this class definition before the SMPCache class in SMPCache.h
+class SMPMissTracker {
 private:
-    // Set to track all blocks that have ever been in this cache
-    std::set<PAddr> previouslySeenBlocks;
+    // Track blocks ever accessed in this cache
+    std::set<PAddr> blocksEverAccessed;
+    std::set<PAddr> seenTags;
     
-    // Map to track invalidated blocks and their tags
-    std::map<PAddr, PAddr> invalidatedBlocks;
-    
-    // Counters for different types of misses
-    uint64_t readCompMiss;   // Compulsory read misses
-    uint64_t readReplMiss;   // Replacement read misses
-    uint64_t readCoheMiss;   // Coherence read misses
-    uint64_t writeCompMiss;  // Compulsory write misses
-    uint64_t writeReplMiss;  // Replacement write misses
-    uint64_t writeCoheMiss;  // Coherence write misses
+    // Track invalidated line information
+    struct InvalidatedLineInfo {
+        bool wasValid;
+        PAddr lastBlock;
+        InvalidatedLineInfo() : wasValid(false), lastBlock(0) {}
+    };
+    std::map<PAddr, InvalidatedLineInfo> invalidatedLines;
+
+    // Statistics counters
+    GStatsCntr readCompMiss;  // Compulsory read misses
+    GStatsCntr readReplMiss;  // Replacement read misses 
+    GStatsCntr readCoheMiss;  // Coherence read misses
+    GStatsCntr writeCompMiss; // Compulsory write misses
+    GStatsCntr writeReplMiss; // Replacement write misses
+    GStatsCntr writeCoheMiss; // Coherence write misses
 
 public:
-    CacheMissTracker() : 
-        readCompMiss(0), readReplMiss(0), readCoheMiss(0),
-        writeCompMiss(0), writeReplMiss(0), writeCoheMiss(0) {}
+    SMPMissTracker(const char* name);
 
-    // Record when a block is added to cache
-    void recordBlockPresence(PAddr addr) {
-        previouslySeenBlocks.insert(addr);
+    void trackNewTag(PAddr tag) {
+        seenTags.insert(tag);
     }
-
-    // Record when a block is invalidated
-    void recordInvalidation(PAddr addr, PAddr tag) {
-        invalidatedBlocks[addr] = tag;
+    
+    // Track access to a block
+    void trackBlockAccess(PAddr addr);
+    
+    // Track line invalidation
+    void trackInvalidation(PAddr addr, PAddr blockTag);
+    
+    // Check if this is first access to this block
+    bool isCompulsoryMiss(PAddr tag) {
+        return seenTags.find(tag) == seenTags.end();
     }
-
-    // Main method to classify a miss
-    void classifyMiss(PAddr addr, PAddr tag, bool isRead) {
-        // First check if this is a coherence miss by looking for matching tag in invalidated blocks
-        auto it = invalidatedBlocks.find(addr);
-        if (it != invalidatedBlocks.end() && it->second == tag) {
-            // It's a coherence miss - the same block was previously invalidated
-            if (isRead) {
-                readCoheMiss++;
-            } else {
-                writeCoheMiss++;
-            }
-            return;
-        }
-
-        // If not a coherence miss, check if it's compulsory or replacement
-        if (previouslySeenBlocks.find(addr) == previouslySeenBlocks.end()) {
-            // Block has never been in this cache - compulsory miss
-            if (isRead) {
-                readCompMiss++;
-            } else {
-                writeCompMiss++;
-            }
-        } else {
-            // Block has been in cache before - replacement miss
-            if (isRead) {
-                readReplMiss++;
-            } else {
-                writeReplMiss++;
-            }
-        }
-    }
-
-    // Methods to get miss counts
-    uint64_t getReadCompMiss() const { return readCompMiss; }
-    uint64_t getReadReplMiss() const { return readReplMiss; }
-    uint64_t getReadCoheMiss() const { return readCoheMiss; }
-    uint64_t getWriteCompMiss() const { return writeCompMiss; }
-    uint64_t getWriteReplMiss() const { return writeReplMiss; }
-    uint64_t getWriteCoheMiss() const { return writeCoheMiss; }
+    
+    // Check if this is a coherence miss
+    bool isCoherenceMiss(PAddr addr) const;
+    
+    // Increment counters
+    void incReadCompMiss() { readCompMiss.inc(); }
+    void incReadReplMiss() { readReplMiss.inc(); }
+    void incReadCoheMiss() { readCoheMiss.inc(); }
+    void incWriteCompMiss() { writeCompMiss.inc(); }
+    void incWriteReplMiss() { writeReplMiss.inc(); }
+    void incWriteCoheMiss() { writeCoheMiss.inc(); }
 };
 
 class SMPCache : public MemObj {
@@ -123,6 +104,7 @@ private:
     //void resolveSituation(SMPMemRequest *sreq);
 protected:
 
+    SMPMissTracker* missTracker;
 
     CacheType *cache;
 
