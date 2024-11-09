@@ -39,6 +39,78 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "estl.h"
 #include <map>
 
+class CacheMissTracker {
+private:
+    // Set to track all blocks that have ever been in this cache
+    std::set<PAddr> previouslySeenBlocks;
+    
+    // Map to track invalidated blocks and their tags
+    std::map<PAddr, PAddr> invalidatedBlocks;
+    
+    // Counters for different types of misses
+    uint64_t readCompMiss;   // Compulsory read misses
+    uint64_t readReplMiss;   // Replacement read misses
+    uint64_t readCoheMiss;   // Coherence read misses
+    uint64_t writeCompMiss;  // Compulsory write misses
+    uint64_t writeReplMiss;  // Replacement write misses
+    uint64_t writeCoheMiss;  // Coherence write misses
+
+public:
+    CacheMissTracker() : 
+        readCompMiss(0), readReplMiss(0), readCoheMiss(0),
+        writeCompMiss(0), writeReplMiss(0), writeCoheMiss(0) {}
+
+    // Record when a block is added to cache
+    void recordBlockPresence(PAddr addr) {
+        previouslySeenBlocks.insert(addr);
+    }
+
+    // Record when a block is invalidated
+    void recordInvalidation(PAddr addr, PAddr tag) {
+        invalidatedBlocks[addr] = tag;
+    }
+
+    // Main method to classify a miss
+    void classifyMiss(PAddr addr, PAddr tag, bool isRead) {
+        // First check if this is a coherence miss by looking for matching tag in invalidated blocks
+        auto it = invalidatedBlocks.find(addr);
+        if (it != invalidatedBlocks.end() && it->second == tag) {
+            // It's a coherence miss - the same block was previously invalidated
+            if (isRead) {
+                readCoheMiss++;
+            } else {
+                writeCoheMiss++;
+            }
+            return;
+        }
+
+        // If not a coherence miss, check if it's compulsory or replacement
+        if (previouslySeenBlocks.find(addr) == previouslySeenBlocks.end()) {
+            // Block has never been in this cache - compulsory miss
+            if (isRead) {
+                readCompMiss++;
+            } else {
+                writeCompMiss++;
+            }
+        } else {
+            // Block has been in cache before - replacement miss
+            if (isRead) {
+                readReplMiss++;
+            } else {
+                writeReplMiss++;
+            }
+        }
+    }
+
+    // Methods to get miss counts
+    uint64_t getReadCompMiss() const { return readCompMiss; }
+    uint64_t getReadReplMiss() const { return readReplMiss; }
+    uint64_t getReadCoheMiss() const { return readCoheMiss; }
+    uint64_t getWriteCompMiss() const { return writeCompMiss; }
+    uint64_t getWriteReplMiss() const { return writeReplMiss; }
+    uint64_t getWriteCoheMiss() const { return writeCoheMiss; }
+};
+
 class SMPCache : public MemObj {
 public:
     typedef CacheGeneric<SMPCacheState, PAddr, false>            CacheType;
