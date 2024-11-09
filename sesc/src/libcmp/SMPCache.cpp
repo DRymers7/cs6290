@@ -503,16 +503,12 @@ void SMPCache::doRead(MemRequest *mreq)
     if (missTracker->isCompulsoryMiss(tag)) {
         missTracker->incReadCompMiss();
         missTracker->trackNewTag(tag);
-    }
-
-    // Classify the miss
-    if (missTracker->isCoherenceMiss(addr)) {
+    } else if (missTracker->isCoherenceMiss(addr)) {
         missTracker->incReadCoheMiss();
     } else {
+        // Default to replacement miss
         missTracker->incReadReplMiss();
     }
-
-    // sendMiss(mreq);
 
 #if (defined TRACK_MPKI)
     DInst *dinst = mreq->getDInst();
@@ -630,12 +626,10 @@ void SMPCache::doWrite(MemRequest *mreq)
     if (missTracker->isCompulsoryMiss(tag)) {
         missTracker->incWriteCompMiss();
         missTracker->trackNewTag(tag);
-    }
-
-    // Classify the miss
-    if (missTracker->isCoherenceMiss(addr)) {
+    } else if (missTracker->isCoherenceMiss(addr)) {
         missTracker->incWriteCoheMiss();
     } else {
+        // Default to replacement miss
         missTracker->incWriteReplMiss();
     }
 
