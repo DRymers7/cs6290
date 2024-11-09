@@ -62,8 +62,10 @@ private:
     GStatsCntr writeReplMiss; // Replacement write misses
     GStatsCntr writeCoheMiss; // Coherence write misses
 
+    SMPCache *cache;
+
 public:
-    SMPMissTracker(const char* name);
+    SMPMissTracker(SMPCache *c, const char* name);
 
     void trackNewTag(PAddr tag) {
         seenTags.insert(tag);
@@ -81,7 +83,7 @@ public:
     }
     
     // Check if this is a coherence miss
-    bool isCoherenceMiss(PAddr addr) const;
+    bool isCoherenceMiss(PAddr addr, typename CacheGeneric<SMPCacheState,PAddr,false>::CacheLine *l) const;
     
     // Increment counters
     void incReadCompMiss() { readCompMiss.inc(); }

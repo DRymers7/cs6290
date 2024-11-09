@@ -48,6 +48,8 @@ enum SMPState_t {
 class SMPCacheState : public StateGeneric<> {
 
 private:
+    PAddr lastTag; // This is used to preserve previous tag prior to invalidation
+
 protected:
     uint32_t state;
     // JJO
@@ -69,9 +71,18 @@ public:
         // cannot invalidate if line is in transient state,
         // except when this is the end of an invalidate chain
         GI(isLocked(), (state & SMP_TRANS_BIT) && (state & SMP_INV_BIT));
+        lastTag = getTag(); // save tag using parent class getTag() method.
         clearTag();
         state = SMP_INVALID;
         TS = false;
+    }
+
+    PAddr getLastTag() const {
+        return lastTag;
+    }
+
+    bool wasValid() const {
+        return lastTag != 0;
     }
 
     bool isLocked() const {

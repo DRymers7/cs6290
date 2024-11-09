@@ -30,6 +30,7 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #include "SMPRouter.h"
 
+#include <cstdint>
 #include <iomanip>
 
 #if (defined DEBUG_LEAK)
@@ -80,13 +81,14 @@ const char* SMPCache::cohOutfile = NULL;
 unsigned SMPCache::cacheID = 0;
 #endif
 
-SMPMissTracker::SMPMissTracker(const char* name)
+SMPMissTracker::SMPMissTracker(SMPCache *c, const char* name)
     : readCompMiss("%s:readCompMiss", name)
     , readReplMiss("%s:readReplMiss", name)
     , readCoheMiss("%s:readCoheMiss", name) 
     , writeCompMiss("%s:writeCompMiss", name)
     , writeReplMiss("%s:writeReplMiss", name)
     , writeCoheMiss("%s:writeCoheMiss", name)
+    , cache(c)
 {
     // Nothing else to initialize
 };
@@ -101,13 +103,17 @@ void SMPMissTracker::trackInvalidation(PAddr addr, PAddr blockTag) {
     info.lastBlock = blockTag;
 };
 
-bool SMPMissTracker::isCoherenceMiss(PAddr addr) const {
-    auto it = invalidatedLines.find(addr);
-    if (it == invalidatedLines.end())
-        return false;
-        
-    return it->second.wasValid && (it->second.lastBlock == addr);
-};
+bool SMPMissTracker::isCoherenceMiss(PAddr addr, typename CacheGeneric<SMPCacheState,PAddr,false>::CacheLine *l) const {
+    if (!l) return false;
+    
+    SMPCacheState *state = static_cast<SMPCacheState*>(l);
+
+    PAddr requestTag = cache->calcTag(addr);
+    
+    return (!state->isValid() && 
+            state->wasValid() &&
+            state->getLastTag() == requestTag);
+}
 
 SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
     : MemObj(section, name)
@@ -125,7 +131,7 @@ SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
     , invalDirty("%s:invalDirty", name)
     , allocDirty("%s:allocDirty", name)
 {
-    missTracker = new SMPMissTracker(name);
+    missTracker = new SMPMissTracker(this, name);
 
     MemObj *lowerLevel = NULL;
     //printf("%d\n", dms->getPID());
@@ -500,15 +506,36 @@ void SMPCache::doRead(MemRequest *mreq)
 
     PAddr tag = calcTag(addr);
 
-    if (missTracker->isCompulsoryMiss(tag)) {
+    // Check all lines in the set for coherence miss
+    bool isCoherence = false;
+    int32_t index = cache->calcIndex4Tag(tag);
+    for(uint32_t i = 0; i < cache->getAssoc(); i++) {
+        Line *checkLine = cache->getPLine(index + i);
+        if (missTracker->isCoherenceMiss(addr, checkLine)) {
+            isCoherence = true;
+            break;
+        }
+    }
+
+    // First check for coherence miss 
+    if (isCoherence) {
+        missTracker->incReadCoheMiss();
+    } else if (missTracker->isCompulsoryMiss(tag)) {
         missTracker->incReadCompMiss();
         missTracker->trackNewTag(tag);
-    } else if (missTracker->isCoherenceMiss(addr)) {
-        missTracker->incReadCoheMiss();
     } else {
-        // Default to replacement miss
         missTracker->incReadReplMiss();
     }
+
+    // if (missTracker->isCompulsoryMiss(tag)) {
+    //     missTracker->incReadCompMiss();
+    //     missTracker->trackNewTag(tag);
+    // } else if (missTracker->isCoherenceMiss(addr, l)) {
+    //     missTracker->incReadCoheMiss();
+    // } else {
+    //     // Default to replacement miss
+    //     missTracker->incReadReplMiss();
+    // }
 
 #if (defined TRACK_MPKI)
     DInst *dinst = mreq->getDInst();
@@ -623,15 +650,37 @@ void SMPCache::doWrite(MemRequest *mreq)
 
     PAddr tag = calcTag(addr);
 
-    if (missTracker->isCompulsoryMiss(tag)) {
+    // Check all lines in the set for coherence miss
+    bool isCoherence = false;
+    int32_t index = cache->calcIndex4Tag(tag);
+    for(uint32_t i = 0; i < cache->getAssoc(); i++) {
+        Line *checkLine = cache->getPLine(index + i);
+        if (missTracker->isCoherenceMiss(addr, checkLine)) {
+            isCoherence = true;
+            break;
+        }
+    }
+
+    // Check coherence miss first
+    if (isCoherence) {
+        missTracker->incWriteCoheMiss();
+    } else if (missTracker->isCompulsoryMiss(tag)) {
         missTracker->incWriteCompMiss();
         missTracker->trackNewTag(tag);
-    } else if (missTracker->isCoherenceMiss(addr)) {
-        missTracker->incWriteCoheMiss();
     } else {
         // Default to replacement miss
         missTracker->incWriteReplMiss();
     }
+
+    // if (missTracker->isCompulsoryMiss(tag)) {
+    //     missTracker->incWriteCompMiss();
+    //     missTracker->trackNewTag(tag);
+    // } else if (missTracker->isCoherenceMiss(addr, l)) {
+    //     missTracker->incWriteCoheMiss();
+    // } else {
+    //     // Default to replacement miss
+    //     missTracker->incWriteReplMiss();
+    // }
 
 #ifdef SESC_ENERGY
     wrEnergy[1]->inc();
