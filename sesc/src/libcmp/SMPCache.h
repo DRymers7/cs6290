@@ -39,9 +39,11 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "estl.h"
 #include <map>
 
-// Add this class definition before the SMPCache class in SMPCache.h
 class SMPMissTracker {
 private:
+
+    typedef CacheGeneric<SMPCacheState, PAddr, false>::CacheLine Line;
+
     // Track blocks ever accessed in this cache
     std::set<PAddr> blocksEverAccessed;
     std::set<PAddr> seenTags;
@@ -84,6 +86,8 @@ public:
     
     // Check if this is a coherence miss
     bool isCoherenceMiss(PAddr addr, typename CacheGeneric<SMPCacheState,PAddr,false>::CacheLine *l) const;
+
+    void handleLineReuse(PAddr oldAddr, PAddr newAddr);
     
     // Increment counters
     void incReadCompMiss() { readCompMiss.inc(); }

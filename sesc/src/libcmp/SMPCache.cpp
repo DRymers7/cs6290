@@ -115,6 +115,21 @@ bool SMPMissTracker::isCoherenceMiss(PAddr addr, typename CacheGeneric<SMPCacheS
             state->getLastTag() == requestTag);
 }
 
+void SMPMissTracker::handleLineReuse(PAddr oldAddr, PAddr newAddr) {
+    PAddr oldTag = cache->calcTag(oldAddr);
+    PAddr newTag = cache->calcTag(newAddr);
+    
+    // When a line is reused, it shouldn't be considered for coherence misses 
+    // for its old tag anymore, since that block is no longer in that line
+    Line *l = cache->getLine(oldAddr);  // Use getLine instead of findLine
+    if (l && !l->isValid()) {
+        SMPCacheState *state = static_cast<SMPCacheState*>(l);
+        if (state->wasValid() && state->getLastTag() == oldTag) {
+            state->clearLastTag();
+        }
+    }
+}
+
 SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
     : MemObj(section, name)
     , readHit("%s:readHit", name)
@@ -648,39 +663,34 @@ void SMPCache::doWrite(MemRequest *mreq)
 
     writeMiss.inc();
 
+    bool isCoherence = false;
     PAddr tag = calcTag(addr);
 
-    // Check all lines in the set for coherence miss
-    bool isCoherence = false;
-    int32_t index = cache->calcIndex4Tag(tag);
-    for(uint32_t i = 0; i < cache->getAssoc(); i++) {
-        Line *checkLine = cache->getPLine(index + i);
-        if (missTracker->isCoherenceMiss(addr, checkLine)) {
-            isCoherence = true;
-            break;
+    // First check for write-specific coherence miss case: line exists but can't be written
+    if (l && !l->canBeWritten()) {
+        missTracker->incWriteCoheMiss();
+        // return;
+    } else {
+        // If we get here, the line wasn't found or couldn't be written
+        // Check all lines in the set for coherence miss
+        int32_t index = cache->calcIndex4Tag(tag);
+        for(uint32_t i = 0; i < cache->getAssoc(); i++) {
+            Line *checkLine = cache->getPLine(index + i);
+            if (missTracker->isCoherenceMiss(addr, checkLine)) {
+                isCoherence = true;
+                break;
+            }
+        }
+
+        if (isCoherence) {
+            missTracker->incWriteCoheMiss();
+        } else if (missTracker->isCompulsoryMiss(tag)) {
+            missTracker->incWriteCompMiss();
+            missTracker->trackNewTag(tag);
+        } else {
+            missTracker->incWriteReplMiss();
         }
     }
-
-    // Check coherence miss first
-    if (isCoherence) {
-        missTracker->incWriteCoheMiss();
-    } else if (missTracker->isCompulsoryMiss(tag)) {
-        missTracker->incWriteCompMiss();
-        missTracker->trackNewTag(tag);
-    } else {
-        // Default to replacement miss
-        missTracker->incWriteReplMiss();
-    }
-
-    // if (missTracker->isCompulsoryMiss(tag)) {
-    //     missTracker->incWriteCompMiss();
-    //     missTracker->trackNewTag(tag);
-    // } else if (missTracker->isCoherenceMiss(addr, l)) {
-    //     missTracker->incWriteCoheMiss();
-    // } else {
-    //     // Default to replacement miss
-    //     missTracker->incWriteReplMiss();
-    // }
 
 #ifdef SESC_ENERGY
     wrEnergy[1]->inc();
@@ -1782,6 +1792,11 @@ SMPCache::Line *SMPCache::allocateLine(PAddr addr, CallbackBase *cb,
     }
 
     rpl_addr = cache->calcAddr4Tag(l->getTag());
+
+    if (l->isValid()) {
+        missTracker->handleLineReuse(rpl_addr, addr); // Add this
+    }
+
     lineFill.inc();
 
     nextSlot(); // have to do an access to check which line is free
@@ -1953,6 +1968,15 @@ void SMPCache::doAllocateLine(PAddr addr, PAddr rpl_addr, CallbackBase *cb)
     IJ(0);
 
     Line *l = cache->findLine(rpl_addr);
+
+    if (l) {
+        if (l->isValid()) {
+            missTracker->handleLineReuse(rpl_addr, addr); // Add this
+        }
+        l->invalidate();
+        l->setTag(cache->calcTag(addr));
+    }
+
     I(l && l->isLocked());
 
     if(l->isDirty()) {
@@ -1974,6 +1998,12 @@ SMPCache::Line *SMPCache::getLine(PAddr addr)
 
 void SMPCache::writeLine(PAddr addr) {
     Line *l = cache->writeLine(addr);
+    if (l && l->isValid()) {
+        PAddr oldAddr = cache->calcAddr4Tag(l->getTag());
+        if (oldAddr != addr) {
+            missTracker->handleLineReuse(oldAddr, addr); // Add this
+        }
+    }
     IJ(l);
 }
 

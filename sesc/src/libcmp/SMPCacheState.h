@@ -81,6 +81,10 @@ public:
         return lastTag;
     }
 
+    void clearLastTag() {
+        lastTag = 0;  // Indicate no previous tag
+    }
+
     bool wasValid() const {
         return lastTag != 0;
     }
