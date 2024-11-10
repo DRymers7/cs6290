@@ -48,13 +48,13 @@ private:
     std::set<PAddr> blocksEverAccessed;
     std::set<PAddr> seenTags;
     
-    // Track invalidated line information
-    struct InvalidatedLineInfo {
-        bool wasValid;
-        PAddr lastBlock;
-        InvalidatedLineInfo() : wasValid(false), lastBlock(0) {}
-    };
-    std::map<PAddr, InvalidatedLineInfo> invalidatedLines;
+    // // Track invalidated line information
+    // struct InvalidatedLineInfo {
+    //     bool wasValid;
+    //     PAddr lastBlock;
+    //     InvalidatedLineInfo() : wasValid(false), lastBlock(0) {}
+    // };
+    // std::map<PAddr, InvalidatedLineInfo> invalidatedLines;
 
     // Statistics counters
     GStatsCntr readCompMiss;  // Compulsory read misses
@@ -74,10 +74,10 @@ public:
     }
     
     // Track access to a block
-    void trackBlockAccess(PAddr addr);
+    // void trackBlockAccess(PAddr addr);
     
     // Track line invalidation
-    void trackInvalidation(PAddr addr, PAddr blockTag);
+    // void trackInvalidation(PAddr addr, PAddr blockTag);
     
     // Check if this is first access to this block
     bool isCompulsoryMiss(PAddr tag) {

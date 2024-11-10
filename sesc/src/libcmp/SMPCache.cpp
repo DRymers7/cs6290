@@ -93,15 +93,15 @@ SMPMissTracker::SMPMissTracker(SMPCache *c, const char* name)
     // Nothing else to initialize
 };
 
-void SMPMissTracker::trackBlockAccess(PAddr addr) {
-    blocksEverAccessed.insert(addr);
-};
+// void SMPMissTracker::trackBlockAccess(PAddr addr) {
+//     blocksEverAccessed.insert(addr);
+// };
 
-void SMPMissTracker::trackInvalidation(PAddr addr, PAddr blockTag) {
-    InvalidatedLineInfo& info = invalidatedLines[addr];
-    info.wasValid = true;
-    info.lastBlock = blockTag;
-};
+// void SMPMissTracker::trackInvalidation(PAddr addr, PAddr blockTag) {
+//     InvalidatedLineInfo& info = invalidatedLines[addr];
+//     info.wasValid = true;
+//     info.lastBlock = blockTag;
+// };
 
 bool SMPMissTracker::isCoherenceMiss(PAddr addr, typename CacheGeneric<SMPCacheState,PAddr,false>::CacheLine *l) const {
     if (!l) return false;
@@ -121,10 +121,10 @@ void SMPMissTracker::handleLineReuse(PAddr oldAddr, PAddr newAddr) {
     
     // When a line is reused, it shouldn't be considered for coherence misses 
     // for its old tag anymore, since that block is no longer in that line
-    Line *l = cache->getLine(oldAddr);  // Use getLine instead of findLine
-    if (l && !l->isValid()) {
+    Line *l = cache->getLine(oldAddr);
+    if (l) {
         SMPCacheState *state = static_cast<SMPCacheState*>(l);
-        if (state->wasValid() && state->getLastTag() == oldTag) {
+        if (!l->isValid() && state->wasValid() && state->getLastTag() == oldTag) {
             state->clearLastTag();
         }
     }
@@ -668,6 +668,7 @@ void SMPCache::doWrite(MemRequest *mreq)
 
     // First check for write-specific coherence miss case: line exists but can't be written
     if (l && !l->canBeWritten()) {
+        printf("Write Coherence Miss (can't write) - addr: %x tag: %x state: %x\n", addr, tag, l->getState());
         missTracker->incWriteCoheMiss();
         // return;
     } else {
@@ -819,7 +820,7 @@ void SMPCache::realInvalidate(PAddr addr, ushort size, bool writeBack)
             //I(l->isValid());
 
             // Track invalidation before it happens
-            missTracker->trackInvalidation(addr, l->getTag());
+            // missTracker->trackInvalidation(addr, l->getTag());
 
             if (l->isDirty()) {
                 invalDirty.inc();
