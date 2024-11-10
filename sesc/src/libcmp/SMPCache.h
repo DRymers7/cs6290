@@ -108,6 +108,7 @@ private:
 
     void processReply(MemRequest *mreq);
     //void resolveSituation(SMPMemRequest *sreq);
+
 protected:
 
     SMPMissTracker* missTracker;
@@ -185,7 +186,7 @@ protected:
     // port usage accounting
     Time_t nextSlot() {
         return cachePort->nextSlot();
-    }
+    } 
 
     // local routines
     void doRead(MemRequest *mreq);
@@ -215,6 +216,9 @@ protected:
             &SMPCache::concludeWriteBack> concludeWriteBackCB;
 
 public:
+
+    static std::ofstream debug_file;  
+    void flushDebugLog(); 
 
     typedef CallbackMember1<SMPCache, MemRequest *,
             &SMPCache::sendRead> doReadAgainCB;

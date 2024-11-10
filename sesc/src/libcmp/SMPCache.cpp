@@ -32,6 +32,7 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #include <cstdint>
 #include <iomanip>
+#include <fstream>
 
 #if (defined DEBUG_LEAK)
 Time_t Directory::lastClock = 0;
@@ -81,6 +82,8 @@ const char* SMPCache::cohOutfile = NULL;
 unsigned SMPCache::cacheID = 0;
 #endif
 
+std::ofstream SMPCache::debug_file;
+
 SMPMissTracker::SMPMissTracker(SMPCache *c, const char* name)
     : readCompMiss("%s:readCompMiss", name)
     , readReplMiss("%s:readReplMiss", name)
@@ -110,9 +113,16 @@ bool SMPMissTracker::isCoherenceMiss(PAddr addr, typename CacheGeneric<SMPCacheS
 
     PAddr requestTag = cache->calcTag(addr);
     
-    return (!state->isValid() && 
+    bool result = (!state->isValid() && 
             state->wasValid() &&
             state->getLastTag() == requestTag);
+
+    if (result) {
+        SMPCache::debug_file << "Coherence Miss Check - addr: 0x" << std::hex << addr 
+                << " tag: 0x" << requestTag << " lastTag: 0x" << state->getLastTag() 
+                << " state: 0x" << state->getState() << std::dec << "\n";    
+    }
+    return result;
 }
 
 void SMPMissTracker::handleLineReuse(PAddr oldAddr, PAddr newAddr) {
@@ -125,6 +135,9 @@ void SMPMissTracker::handleLineReuse(PAddr oldAddr, PAddr newAddr) {
     if (l) {
         SMPCacheState *state = static_cast<SMPCacheState*>(l);
         if (!l->isValid() && state->wasValid() && state->getLastTag() == oldTag) {
+            SMPCache::debug_file << "Line Reuse - clearing lastTag - oldAddr: 0x" << std::hex << oldAddr 
+                    << " oldTag: 0x" << oldTag << " newAddr: 0x" << newAddr 
+                    << " newTag: 0x" << newTag << std::dec << "\n";
             state->clearLastTag();
         }
     }
@@ -146,6 +159,15 @@ SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
     , invalDirty("%s:invalDirty", name)
     , allocDirty("%s:allocDirty", name)
 {
+    // Open the debug file only if it's not already open
+    if (!SMPCache::debug_file.is_open()) {
+        SMPCache::debug_file.open("debug_logs.txt", std::ios::out | std::ios::trunc);
+        if (!SMPCache::debug_file.is_open()) {
+            std::cerr << "Error opening debug_logs.txt" << std::endl;
+        } else {
+            std::cout << "Debug file opened successfully." << std::endl;
+        }
+    }
     missTracker = new SMPMissTracker(this, name);
 
     MemObj *lowerLevel = NULL;
@@ -310,6 +332,12 @@ SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
     }
 }
 
+void SMPCache::flushDebugLog() {
+    if (SMPCache::debug_file.is_open()) {
+        SMPCache::debug_file.flush();
+    }
+}
+
 void SMPCache::PrintStat()
 {
 	std::ostream* out = &cout;
@@ -362,6 +390,9 @@ void SMPCache::PrintStat()
 
 SMPCache::~SMPCache()
 {
+    if (SMPCache::debug_file.is_open()) {
+        SMPCache::debug_file.close();
+    }    
     delete missTracker;
     // do nothing
 }
@@ -527,6 +558,9 @@ void SMPCache::doRead(MemRequest *mreq)
     for(uint32_t i = 0; i < cache->getAssoc(); i++) {
         Line *checkLine = cache->getPLine(index + i);
         if (missTracker->isCoherenceMiss(addr, checkLine)) {
+            SMPCacheState *state = static_cast<SMPCacheState*>(checkLine);
+            SMPCache::debug_file << "Write Coherence Miss (invalid line) - addr: 0x" << std::hex << addr 
+                    << " tag: 0x" << tag << " lastTag: 0x" << state->getLastTag() << std::dec << "\n";
             isCoherence = true;
             break;
         }
@@ -536,9 +570,13 @@ void SMPCache::doRead(MemRequest *mreq)
     if (isCoherence) {
         missTracker->incReadCoheMiss();
     } else if (missTracker->isCompulsoryMiss(tag)) {
+        SMPCache::debug_file << "Write Compulsory Miss - addr: 0x" << std::hex << addr 
+            << " tag: 0x" << tag << std::dec << "\n";
         missTracker->incReadCompMiss();
         missTracker->trackNewTag(tag);
     } else {
+        SMPCache::debug_file << "Write Replacement Miss - addr: 0x" << std::hex << addr 
+            << " tag: 0x" << tag << std::dec << "\n";
         missTracker->incReadReplMiss();
     }
 
@@ -618,6 +656,8 @@ void SMPCache::doWriteAgain(MemRequest *mreq) {
 
 void SMPCache::doWrite(MemRequest *mreq)
 {
+    flushDebugLog();
+
     PAddr addr = mreq->getPAddr();
     Line *l = cache->writeLine(addr);
 
@@ -668,7 +708,8 @@ void SMPCache::doWrite(MemRequest *mreq)
 
     // First check for write-specific coherence miss case: line exists but can't be written
     if (l && !l->canBeWritten()) {
-        printf("Write Coherence Miss (can't write) - addr: %x tag: %x state: %x\n", addr, tag, l->getState());
+        SMPCache::debug_file << "Write Coherence Miss (can't write) - addr: 0x" << std::hex << addr 
+                << " tag: 0x" << tag << " state: 0x" << l->getState() << std::dec << "\n";
         missTracker->incWriteCoheMiss();
         // return;
     } else {
@@ -678,6 +719,9 @@ void SMPCache::doWrite(MemRequest *mreq)
         for(uint32_t i = 0; i < cache->getAssoc(); i++) {
             Line *checkLine = cache->getPLine(index + i);
             if (missTracker->isCoherenceMiss(addr, checkLine)) {
+                SMPCacheState *state = static_cast<SMPCacheState*>(checkLine);
+                SMPCache::debug_file << "Write Coherence Miss (invalid line) - addr: 0x" << std::hex << addr 
+                        << " tag: 0x" << tag << " lastTag: 0x" << state->getLastTag() << std::dec << "\n";
                 isCoherence = true;
                 break;
             }
@@ -686,9 +730,13 @@ void SMPCache::doWrite(MemRequest *mreq)
         if (isCoherence) {
             missTracker->incWriteCoheMiss();
         } else if (missTracker->isCompulsoryMiss(tag)) {
+            SMPCache::debug_file << "Write Compulsory Miss - addr: 0x" << std::hex << addr 
+                    << " tag: 0x" << tag << std::dec << "\n";
             missTracker->incWriteCompMiss();
             missTracker->trackNewTag(tag);
         } else {
+            SMPCache::debug_file << "Write Replacement Miss - addr: 0x" << std::hex << addr 
+                    << " tag: 0x" << tag << std::dec << "\n";
             missTracker->incWriteReplMiss();
         }
     }

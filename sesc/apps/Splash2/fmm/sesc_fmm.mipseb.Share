@@ -211,7 +211,7 @@ size      =32
 type      ='single'
 bsize     =64
 #END Configuration used. Extracted from "/home/cs6290/sesc/confs/cmp4-noc.conf":
-OSSim:beginTime=Sun Nov 10 14:46:03 2024
+OSSim:beginTime=Sun Nov 10 16:05:45 2024
 
 OSSim:bench=/home/cs6290/sesc/sesc.opt -f Share -c /home/cs6290/sesc/confs/cmp4-noc.conf -iInput/input.256 -ofmm.out -efmm.err fmm.mipseb -p 4 
 OSSim:benchName=fmm.mipseb
@@ -229,7 +229,7 @@ Proc(1):clockTicks=3479477
 Proc(2):clockTicks=3584238
 Proc(3):clockTicks=4088700
 OSSim:reportName=Final
-OSSim:msecs=   10.75:nCPUs=4:nCycles=7722270
+OSSim:msecs=   11.21:nCPUs=4:nCycles=7722270
 OSSim:pseudoreset=0
 BEGIN GStats::report Final
 Read_U=0
@@ -1950,5 +1950,5 @@ BPred(3)_Hybrid:nMiss=11931
 BPred(3)_BTB:nHit=479998
 BPred(3)_BTB:nMiss=1862
 END GStats::report Final
-OSSim:endTime=Sun Nov 10 14:46:14 2024
+OSSim:endTime=Sun Nov 10 16:05:57 2024
 
