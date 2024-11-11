@@ -1,20 +1,21 @@
 TIMING:
-4	256	1.00e-06	5
+1	256	1.00e-06	5
 Time Step 0
 Processor 0
-	Total Time = 0
-Processor 1
-	Total Time = 0
-Processor 2
-	Total Time = 0
-Processor 3
 	Total Time = 0
 Time Step 1
 Processor 0
 	Total Time = 0
-Processor 1
+Time Step 2
+Processor 0
 	Total Time = 0
-Processor 2
+Time Step 3
+Processor 0
+	Total Time = 0
+Time Step 4
+Processor 0
+	Total Time = 0
+END
 	Total Time = 0
 Processor 3
 	Total Time = 0

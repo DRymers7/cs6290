@@ -39,7 +39,11 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "estl.h"
 #include <map>
 
-// Add this class definition before the SMPCache class in SMPCache.h
+/*
+    Modified version of MissTracker class implementation that I used for prj2 solution.
+    This new implementation simply handles tracking compulsory misses, incrementing counters (a bit more cleanly than prj2)
+    and has an instance of the cache as a member variable. 
+*/
 class SMPMissTracker {
 private:
     // Track blocks ever accessed in this cache
@@ -226,6 +230,10 @@ public:
 
 	static void PrintStat();
 
+    /*
+        Public method of SMPCache that we use in conjunction with 
+        SMPCacheMissTracker to identify replacement misses.
+    */
     bool isReplacementMiss(PAddr addr);
 
 #if (defined SIGDEBUG)

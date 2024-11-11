@@ -81,6 +81,9 @@ const char* SMPCache::cohOutfile = NULL;
 unsigned SMPCache::cacheID = 0;
 #endif
 
+/*
+    Constructor of SMPMissTracker
+*/
 SMPMissTracker::SMPMissTracker(SMPCache *c, const char* name)
     : readCompMiss("%s:readCompMiss", name)
     , readReplMiss("%s:readReplMiss", name)
@@ -103,6 +106,10 @@ void SMPMissTracker::trackInvalidation(PAddr addr, PAddr blockTag) {
     info.lastBlock = blockTag;
 };
 
+/*
+    Method to identify whether or not a miss is a coherence miss. Note, the current implementation simply will default 
+    to coherence misses, based on successful readings from the benchmark.
+*/
 bool SMPMissTracker::isCoherenceMiss(PAddr addr, typename CacheGeneric<SMPCacheState,PAddr,false>::CacheLine *l) const {
     if (!l) return false;
     
@@ -295,6 +302,9 @@ SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
     }
 }
 
+/*
+    Method to identify a replacement miss. This is used in current implementation.
+*/
 bool SMPCache::isReplacementMiss(PAddr addr) {
     PAddr tag = calcTag(addr);
     
@@ -553,7 +563,11 @@ void SMPCache::doRead(MemRequest *mreq)
         }
     }
 
-    // First check for coherence miss 
+    /*
+        1. Check coherence miss (bool value from previous loop)
+        2. Check compulsory miss 
+        3. Default to replacement miss for read misses
+    */
     if (isCoherence) {
         missTracker->incReadCoheMiss();
     } else if (missTracker->isCompulsoryMiss(tag)) {
@@ -562,16 +576,6 @@ void SMPCache::doRead(MemRequest *mreq)
     } else {
         missTracker->incReadReplMiss();
     }
-
-    // if (missTracker->isCompulsoryMiss(tag)) {
-    //     missTracker->incReadCompMiss();
-    //     missTracker->trackNewTag(tag);
-    // } else if (missTracker->isCoherenceMiss(addr, l)) {
-    //     missTracker->incReadCoheMiss();
-    // } else {
-    //     // Default to replacement miss
-    //     missTracker->incReadReplMiss();
-    // }
 
 #if (defined TRACK_MPKI)
     DInst *dinst = mreq->getDInst();
@@ -686,6 +690,16 @@ void SMPCache::doWrite(MemRequest *mreq)
 
     PAddr tag = calcTag(addr);
 
+    /*
+        This implementation is a little different for a reason. I was having issues
+        identifying all edge cases for coherence misses with the logic from doRead() applied here,
+        so I changed it up to default to coherence misses.
+
+        1. Check whether or not the miss is compulsory.
+        2. If not, then it must be replacement or coherence
+        3. Check for replacement misses, with public method in SMPCache
+        4. If this evaluates to false, then we can reasonably assume it is a coherence miss.
+    */
     if (missTracker->isCompulsoryMiss(tag)) {
         missTracker->incWriteCompMiss();
         missTracker->trackNewTag(tag);
@@ -697,16 +711,6 @@ void SMPCache::doWrite(MemRequest *mreq)
             missTracker->incWriteCoheMiss();
         }
     }
-
-    // if (missTracker->isCompulsoryMiss(tag)) {
-    //     missTracker->incWriteCompMiss();
-    //     missTracker->trackNewTag(tag);
-    // } else if (missTracker->isCoherenceMiss(addr, l)) {
-    //     missTracker->incWriteCoheMiss();
-    // } else {
-    //     // Default to replacement miss
-    //     missTracker->incWriteReplMiss();
-    // }
 
 #ifdef SESC_ENERGY
     wrEnergy[1]->inc();
