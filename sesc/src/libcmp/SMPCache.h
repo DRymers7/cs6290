@@ -84,6 +84,10 @@ public:
     
     // Check if this is a coherence miss
     bool isCoherenceMiss(PAddr addr, typename CacheGeneric<SMPCacheState,PAddr,false>::CacheLine *l) const;
+
+    bool hasSeenTag(PAddr tag) const {
+        return seenTags.find(tag) != seenTags.end();
+    }
     
     // Increment counters
     void incReadCompMiss() { readCompMiss.inc(); }
@@ -221,6 +225,8 @@ public:
     ~SMPCache();
 
 	static void PrintStat();
+
+    bool isReplacementMiss(PAddr addr);
 
 #if (defined SIGDEBUG)
     void pStat();

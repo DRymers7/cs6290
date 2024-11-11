@@ -295,6 +295,42 @@ SMPCache::SMPCache(SMemorySystem *dms, const char *section, const char *name)
     }
 }
 
+bool SMPCache::isReplacementMiss(PAddr addr) {
+    PAddr tag = calcTag(addr);
+    
+    // Must have seen this tag before to be a replacement miss
+    if (!missTracker->hasSeenTag(tag)) {
+        return false;
+    }
+    
+    int32_t index = cache->calcIndex4Tag(tag);
+    
+    // Check if any line indicates this should be a coherence miss
+    for(uint32_t i = 0; i < cache->getAssoc(); i++) {
+        Line *l = cache->getPLine(index + i);
+        if (!l) continue;
+        
+        SMPCacheState *state = static_cast<SMPCacheState*>(l);
+        if (!state) continue;
+
+        // From the errata - if line is invalid AND it used to hold this block,
+        // this means it's a coherence miss, not a replacement miss
+        if (!l->isValid() && state->wasValid() && 
+            state->getLastTag() == tag) {
+            return false;  // This would be a coherence miss
+        }
+        
+        // Also check for valid lines with this tag
+        if (l->isValid() && l->getTag() == tag && !l->canBeWritten()) {
+            return false;  // This would be a coherence miss
+        }
+    }
+    
+    // If we get here and we've seen the tag before, but no line 
+    // indicates a coherence miss, then it must be a replacement miss
+    return true;
+}
+
 void SMPCache::PrintStat()
 {
 	std::ostream* out = &cout;
@@ -650,26 +686,16 @@ void SMPCache::doWrite(MemRequest *mreq)
 
     PAddr tag = calcTag(addr);
 
-    // Check all lines in the set for coherence miss
-    bool isCoherence = false;
-    int32_t index = cache->calcIndex4Tag(tag);
-    for(uint32_t i = 0; i < cache->getAssoc(); i++) {
-        Line *checkLine = cache->getPLine(index + i);
-        if (missTracker->isCoherenceMiss(addr, checkLine)) {
-            isCoherence = true;
-            break;
-        }
-    }
-
-    // Check coherence miss first
-    if (isCoherence) {
-        missTracker->incWriteCoheMiss();
-    } else if (missTracker->isCompulsoryMiss(tag)) {
+    if (missTracker->isCompulsoryMiss(tag)) {
         missTracker->incWriteCompMiss();
         missTracker->trackNewTag(tag);
     } else {
-        // Default to replacement miss
-        missTracker->incWriteReplMiss();
+        // Must be replacement or coherence
+        if (isReplacementMiss(addr)) {
+            missTracker->incWriteReplMiss();
+        } else {
+            missTracker->incWriteCoheMiss();
+        }
     }
 
     // if (missTracker->isCompulsoryMiss(tag)) {
